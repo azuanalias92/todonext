@@ -52,10 +52,12 @@ const products = [
 ];
 
 export default function Home() {
-  const [modal, setModal]   = useState(false);
-  const [update, setUpdate] = useState(false);
-  const [inputs, setInputs] = useState(false);
-  const [tasks, setTasks]   = useState(false);
+  const [modal, setModal]       = useState(false);
+  const [update, setUpdate]     = useState(false);
+  const [inputs, setInputs]     = useState(false);
+  const [tasks, setTasks]       = useState(false);
+  const [selected, setSelected] = useState(false);
+  const [refresh, setRefresh]   = useState(false);
 
   const toggle = () => setModal(!modal);
 
@@ -65,6 +67,11 @@ export default function Home() {
         [event.target.name]: event.target.value
     });
   };
+
+  const saveTaskToDatabase = (tasks) => {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    setRefresh(true);
+  }
 
   const saveTask = () => {
     console.log('saveTask', inputs);
@@ -77,8 +84,6 @@ export default function Home() {
       let sub_comp = 1;
       let tasks    = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
 
-      console.log('saveTask', tasks);
-
       tasks.push({
         'id'      : id, 
         'status'  : 'I', 
@@ -88,14 +93,12 @@ export default function Home() {
         'desc'    : inputs.desc
       });
 
-      localStorage.setItem('tasks', JSON.stringify(tasks));
+      
       localStorage.setItem('running_id', id);
-      setTasks(tasks);
+      saveTaskToDatabase(tasks);
       toggle();
 
     }
-
-
   };
 
   function labelFormatter(cell, row) {
@@ -123,15 +126,12 @@ export default function Home() {
     );
   }
 
-  function addFormatter(cell, row) {
+  function actionFormatter(cell, row) {
       return (
         <div>
           <FormGroup check inline>
             <Button color="warning" size="xs" onClick={toggle}>Edit</Button>
             <Button color="info" size="xs" onClick={toggle}>Subtask</Button>
-            <Label check>
-               <Input type="checkbox" /> 
-            </Label>
           </FormGroup>
         </div>
       );
@@ -143,10 +143,31 @@ export default function Home() {
     );
   }
 
+  const handleOnSelect = (row, isSelect) => {
+
+
+    if(isSelect){
+      row.status = "C";
+      
+    }else{
+      row.status = "I";
+    }
+
+    tasks.map(obj => row == obj.id || obj);
+    saveTaskToDatabase(tasks);
+  }
+
+  const handleOnSelectAll = (isSelect, rows) => {
+    
+  }
+
   const selectRow = {
     mode: 'checkbox',
     clickToSelect: true,
     clickToExpand: true,
+    onSelect: handleOnSelect,
+    onSelectAll: handleOnSelectAll,
+    selected: selected
   };
 
   const expandRow = {
@@ -192,17 +213,17 @@ export default function Home() {
       headerAlign: 'center',
       align: 'center',
     },{
-      dataField: 'subdone',
+      dataField: 'sub_done',
       text: 'Subtask Done',
       formatter: subFormattter,
     },{
-      dataField: 'subcomp',
+      dataField: 'sub_comp',
       text: 'Subtask Completed',
       formatter: subFormattter,
     },{
       dataField: '#',
       text: 'Action',
-      formatter: addFormatter,
+      formatter: actionFormatter,
       headerAlign: 'right',
       align: 'right'
     }
@@ -219,8 +240,11 @@ export default function Home() {
   useEffect(() => {
       let tasks = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
       setTasks(tasks);
-      console.log('tasks', tasks);
-  }, [])
+      setRefresh(false);
+
+      let selected = tasks.filter(x => x.status != "I").map(a => a.id); 
+      setSelected(selected);
+  }, [refresh])
 
   return (
     <div>
@@ -241,9 +265,9 @@ export default function Home() {
                 <Col sm="8"><CardTitle tag="h5" className="text-bottom">To Do List</CardTitle></Col>
                 
                 <Col sm="3">
-                  <ButtonToggle color="secondary" size="sm">In Progress</ButtonToggle>{' '}
-                  <ButtonToggle color="primary" size="sm">Done</ButtonToggle>{' '}
-                  <ButtonToggle color="success" size="sm">Completed</ButtonToggle>{' '}
+                  <ButtonToggle color="secondary" size="sm" outline>In Progress</ButtonToggle>{' '}
+                  <ButtonToggle color="primary" size="sm" outline>Done</ButtonToggle>{' '}
+                  <ButtonToggle color="success" size="sm" outline>Completed</ButtonToggle>{' '}
                 </Col>
 
                 <Col sm="1"><Button color="info" size="sm" onClick={toggle}>Add Task</Button>{' '}</Col>
