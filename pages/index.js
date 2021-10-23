@@ -229,10 +229,15 @@ export default function Home() {
       filter.splice(index, 1);
     }
     setFilter([...filter]);
-
+    
     let tasks = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
-    let filterTasks = tasks.filter(x => x.status == filter[0] ||  x.status == filter[1] || x.status == filter[2])
-    setTasks(filterTasks);
+
+    if(filter.length === 0){
+      setTasks(tasks);
+    }else{
+      let filterTasks = tasks.filter(x => x.status == filter[0] ||  x.status == filter[1] || x.status == filter[2])
+      setTasks(filterTasks);
+    }
   }
 
   const selectRow = {
