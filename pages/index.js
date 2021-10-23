@@ -76,8 +76,6 @@ export default function Home() {
   }
 
   const saveTask = () => {
-    console.log('saveTask', inputs);
-
     if (typeof window !== 'undefined') {
       // You now have access to `window`
       let id       = localStorage.getItem('running_id') ? parseInt(localStorage.getItem('running_id')) + 1 : 1;
@@ -85,16 +83,17 @@ export default function Home() {
       let sub_done = 1;
       let sub_comp = 1;
       let tasks    = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
+      let parent   = inputs.parent ? inputs.parent : 0;
 
       tasks.push({
-        'id'      : id, 
+        'id'      : id,
+        'parent'  : parent, 
         'status'  : 'I', 
         'sub'     : sub, 
         'sub_done': sub_done, 
         'sub_comp': sub_comp, 
         'desc'    : inputs.desc
       });
-
       
       localStorage.setItem('running_id', id);
       saveTaskToDatabase(tasks);
@@ -103,8 +102,16 @@ export default function Home() {
     }
   };
 
-  function labelFormatter(cell, row) {
+  const updateTask = () => {
+    //allow nextjs to save in localstorage
+    if (typeof window !== 'undefined') {
+      let editTask = tasks.map(obj => inputs.id == obj.id ? inputs : obj);
+      saveTaskToDatabase(editTask);
+      toggle();
+    }
+  };
 
+  function labelFormatter(cell, row) {
     let color = "secondary";
     let text  = "In Progress";
 
@@ -131,10 +138,29 @@ export default function Home() {
   function actionFormatter(cell, row) {
       return (
         <div>
-          <FormGroup check inline>
-            <Button color="warning" size="xs" onClick={toggle}>Edit</Button>
-            <Button color="info" size="xs" onClick={toggle}>Subtask</Button>
-          </FormGroup>
+          <ButtonGroup>
+            <Button size="sm" color="warning" onClick={() => {
+              setUpdate(true);
+              setInputs({
+                ...inputs,
+                ['id']      :row.id,
+                ['desc']    :row.desc,
+                ['status']  :row.status,
+                ['parent']  :row.parent,
+                ['sub']     :row.sub,
+                ['sub_done']:row.sub_done,
+                ['sub_comp']:row.sub_comp,
+              });
+              toggle();
+            }}>Edit</Button>
+            <Button size="sm" color="info" onClick={() => {
+              setUpdate(false);
+              setInputs({
+                ['parent']  :row.id,
+              });
+              toggle();
+            }}>Subtask</Button>
+          </ButtonGroup>
         </div>
       );
   }
@@ -146,11 +172,8 @@ export default function Home() {
   }
 
   const handleOnSelect = (row, isSelect) => {
-
-
     if(isSelect){
       row.status = "C";
-      
     }else{
       row.status = "I";
     }
@@ -170,17 +193,15 @@ export default function Home() {
       filter.splice(index, 1);
     }
     setFilter([...filter]);
-    
+
     let tasks = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
     let filterTasks = tasks.filter(x => x.status == filter[0] ||  x.status == filter[1] || x.status == filter[2])
-    console.log('filter', filterTasks);
-
     setTasks(filterTasks);
   }
 
   const selectRow = {
     mode: 'checkbox',
-    clickToSelect: true,
+    clickToSelect: false,
     clickToExpand: true,
     onSelect: handleOnSelect,
     onSelectAll: handleOnSelectAll,
@@ -218,9 +239,12 @@ export default function Home() {
 
   const columns = [
     {
-    dataField: 'id',
-    text: 'Task ID'
+      dataField: 'id',
+      text: 'Task ID'
     }, {
+      dataField: 'parent',
+      text: 'Parent ID'
+    },{
       dataField: 'desc',
       text: 'Description'
     },{
@@ -289,7 +313,7 @@ export default function Home() {
                   </ButtonGroup>
                 </Col>
 
-                <Col sm="1"><Button color="info" size="sm" onClick={toggle}>Add Task</Button>{' '}</Col>
+                <Col sm="1" ><Button color="info" className="float-right" size="sm" onClick={() => { setInputs(false); setUpdate(false); toggle()}}>Add Task</Button>{' '}</Col>
               </Row>
               <BootstrapTable
                 keyField      = "id"
@@ -314,7 +338,7 @@ export default function Home() {
                   <Input type="text" name="desc" id="desc" placeholder="Task Description" bsSize="lg" onChange={handleChange} value={inputs.desc}/>
               </ModalBody>
               <ModalFooter>
-                {update ? <Button color="primary" onClick = {()=>saveTask()}>Update</Button> : <Button color="primary" onClick = {()=>saveTask()}>Submit</Button> }{' '}
+                {update ? <Button color="primary" onClick = {()=>updateTask()}>Update</Button> : <Button color="primary" onClick = {()=>saveTask()}>Submit</Button> }{' '}
                 <Button color="secondary"  onClick={toggle} outline>Cancel</Button>
               </ModalFooter>
             </Modal>
