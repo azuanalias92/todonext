@@ -41,7 +41,8 @@ import {
   ModalFooter,
   Form,
   FormGroup,
-  Label
+  Label,
+  ButtonGroup
 } from "reactstrap";
 
 const products = [
@@ -53,13 +54,14 @@ const products = [
 
 export default function Home() {
   const [modal, setModal]       = useState(false);
+  const [filter, setFilter]     = useState([]);
   const [update, setUpdate]     = useState(false);
   const [inputs, setInputs]     = useState(false);
   const [tasks, setTasks]       = useState(false);
   const [selected, setSelected] = useState(false);
   const [refresh, setRefresh]   = useState(false);
 
-  const toggle = () => setModal(!modal);
+  const toggle           = () => setModal(!modal);
 
   const handleChange = event => {
     setInputs({
@@ -158,7 +160,22 @@ export default function Home() {
   }
 
   const handleOnSelectAll = (isSelect, rows) => {
+  }
+
+  const handleFilter = (selected) => {
+    const index = filter.indexOf(selected);
+    if (index < 0) {
+      filter.push(selected);
+    } else {
+      filter.splice(index, 1);
+    }
+    setFilter([...filter]);
     
+    let tasks = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
+    let filterTasks = tasks.filter(x => x.status == filter[0] ||  x.status == filter[1] || x.status == filter[2])
+    console.log('filter', filterTasks);
+
+    setTasks(filterTasks);
   }
 
   const selectRow = {
@@ -265,9 +282,11 @@ export default function Home() {
                 <Col sm="8"><CardTitle tag="h5" className="text-bottom">To Do List</CardTitle></Col>
                 
                 <Col sm="3">
-                  <ButtonToggle color="secondary" size="sm" outline>In Progress</ButtonToggle>{' '}
-                  <ButtonToggle color="primary" size="sm" outline>Done</ButtonToggle>{' '}
-                  <ButtonToggle color="success" size="sm" outline>Completed</ButtonToggle>{' '}
+                  <ButtonGroup>
+                    <Button size="sm" color="secondary" onClick={() => handleFilter('I')} active={filter.includes('I')} outline>In Progress</Button>
+                    <Button size="sm" color="primary" onClick={() => handleFilter('D')} active={filter.includes('D')} outline>Done</Button>
+                    <Button size="sm" color="success" onClick={() => handleFilter('C')} active={filter.includes('C')} outline>Completed</Button>
+                  </ButtonGroup>
                 </Col>
 
                 <Col sm="1"><Button color="info" size="sm" onClick={toggle}>Add Task</Button>{' '}</Col>
