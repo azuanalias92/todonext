@@ -78,12 +78,16 @@ export default function Home() {
   const saveTask = () => {
     if (typeof window !== 'undefined') {
       // You now have access to `window`
+      //let subtask  = inputs.parent ? tasks.filter( x => x.parent == inputs.parent) : false; 
       let id       = localStorage.getItem('running_id') ? parseInt(localStorage.getItem('running_id')) + 1 : 1;
-      let sub      = 1;
-      let sub_done = 1;
-      let sub_comp = 1;
+      let sub      = 0;
+      let sub_done = 0; 
+      let sub_comp = 0;
       let tasks    = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
       let parent   = inputs.parent ? inputs.parent : 0;
+
+      if(inputs.parent )
+        updateParentCount(tasks, inputs.parent, 'sub', 1);
 
       tasks.push({
         'id'      : id,
@@ -94,11 +98,10 @@ export default function Home() {
         'sub_comp': sub_comp, 
         'desc'    : inputs.desc
       });
-      
+
       localStorage.setItem('running_id', id);
       saveTaskToDatabase(tasks);
       toggle();
-
     }
   };
 
@@ -108,6 +111,27 @@ export default function Home() {
       let editTask = tasks.map(obj => inputs.id == obj.id ? inputs : obj);
       saveTaskToDatabase(editTask);
       toggle();
+    }
+  };
+
+  const updateParentCount = (tasks, parent, type, value) => {
+    let input =  tasks.find(x => x.id == parent);
+    switch(type){
+      case 'sub' :
+        input.sub = parseInt(input.sub) + value;
+        break;
+      case 'sub_done' :
+        input.sub_done = parseInt(input.sub_done) + value;
+        break;
+      case 'sub_comp' :
+        input.sub_comp = parseInt(input.sub_comp) + value;
+        break;
+    }
+
+    if(input.parent == 0){
+      return tasks.map(obj => inputs.id == parent ? input : obj);
+    }else{
+      updateParentCount(tasks, input.parent, type, value);
     }
   };
 
@@ -155,9 +179,7 @@ export default function Home() {
             }}>Edit</Button>
             <Button size="sm" color="info" onClick={() => {
               setUpdate(false);
-              setInputs({
-                ['parent']  :row.id,
-              });
+              setInputs({['parent'] :row.id});
               toggle();
             }}>Subtask</Button>
           </ButtonGroup>
@@ -172,13 +194,21 @@ export default function Home() {
   }
 
   const handleOnSelect = (row, isSelect) => {
+
+    let value = 0;
     if(isSelect){
-      row.status = "C";
+      row.status = "D";
+      value      = 1;
     }else{
       row.status = "I";
+      value      = -1;
     }
 
+    if(row.parent != 0)
+      updateParentCount(tasks, row.parent, 'sub_done', value);
+    
     tasks.map(obj => row == obj.id || obj);
+    console.log('handleOnSelect', tasks);
     saveTaskToDatabase(tasks);
   }
 
@@ -200,12 +230,12 @@ export default function Home() {
   }
 
   const selectRow = {
-    mode: 'checkbox',
+    mode         : 'checkbox',
     clickToSelect: false,
     clickToExpand: true,
-    onSelect: handleOnSelect,
-    onSelectAll: handleOnSelectAll,
-    selected: selected
+    onSelect     : handleOnSelect,
+    onSelectAll  : handleOnSelectAll,
+    selected     : selected
   };
 
   const expandRow = {
@@ -298,8 +328,8 @@ export default function Home() {
         <NavbarBrand href="/">ToDoNext</NavbarBrand>
       </Navbar>
 
-      <div className={styles.container}>
-        <main className={styles.main}>
+      {/*<div className={styles.container}>*/}
+        {/*<main className={styles.main}>*/}
           <Card className="text-muted">
             <CardBody>
               <Row>
@@ -343,8 +373,8 @@ export default function Home() {
               </ModalFooter>
             </Modal>
           </Card>
-        </main>
-      </div>
+        {/*</main>
+      </div>*/}
     </div>
   )
 }
