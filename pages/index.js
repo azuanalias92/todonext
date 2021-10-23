@@ -127,6 +127,8 @@ export default function Home() {
         input.sub_comp = parseInt(input.sub_comp) + value;
         break;
     }
+    if(input.status != "I")
+      input.status = input.sub_done == input.sub ? 'C' : 'D';
 
     if(input.parent == 0){
       return tasks.map(obj => inputs.id == parent ? input : obj);
@@ -197,7 +199,11 @@ export default function Home() {
 
     let value = 0;
     if(isSelect){
-      row.status = "D";
+      if(row.sub == 0 || row.sub == row.sub_done){
+        row.status = "C";
+      }else{
+        row.status = "D";
+      }
       value      = 1;
     }else{
       row.status = "I";
