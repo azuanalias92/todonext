@@ -47,13 +47,14 @@ import {
 
 
 export default function Home() {
-  const [modal, setModal]       = useState(false);
-  const [filter, setFilter]     = useState([]);
-  const [update, setUpdate]     = useState(false);
-  const [inputs, setInputs]     = useState(false);
-  const [tasks, setTasks]       = useState(false);
-  const [selected, setSelected] = useState(false);
-  const [refresh, setRefresh]   = useState(false);
+  const [modal, setModal]         = useState(false);
+  const [filter, setFilter]       = useState([]);
+  const [update, setUpdate]       = useState(false);
+  const [inputs, setInputs]       = useState(false);
+  const [tasks, setTasks]         = useState(false);
+  const [selected, setSelected]   = useState(false);
+  const [refresh, setRefresh]     = useState(false);
+  const [data, setData]           = useState(false);
 
   const toggle = () => setModal(!modal);
 
@@ -63,12 +64,10 @@ export default function Home() {
   }
 
   const handleChange = event => {
-    console.log('handleChange -before', inputs);
     setInputs({
         ...inputs,
         [event.target.name]: event.target.value
     });
-    console.log('handleChange -after', inputs);
   };
 
   const saveTask = () => {
@@ -172,7 +171,6 @@ export default function Home() {
               //load latest data since action formatter is not updated 
               let lastest_data  = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
               let selected_task = lastest_data.find(x => x.id == row.id);
-              console.log('handleChange -row', selected_task);
               setInputs({
                 ...inputs,
                 ['id']      :selected_task.id,
@@ -196,8 +194,9 @@ export default function Home() {
   }
 
   function subFormattter(cell, row){
+    let  subtask = row.sub != 0 ? ((cell + '/' + row.sub) + ' - ' + (cell/row.sub * 100).toFixed(0) +  '%') : 'N/A';
     return  (
-        <p>{cell} / {row.sub}</p>
+        <p>{subtask}</p>
     );
   }
 
@@ -235,12 +234,16 @@ export default function Home() {
     setFilter([...filter]);
     
     let tasks = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
-
+    let data  = tasks.filter(x => x.parent == 0);
+  
     if(filter.length === 0){
       setTasks(tasks);
+      setData(data);
     }else{
-      let filterTasks = tasks.filter(x => x.status == filter[0] ||  x.status == filter[1] || x.status == filter[2])
+      let filterTasks = tasks.filter(x => x.status == filter[0] ||  x.status == filter[1] || x.status == filter[2]);
       setTasks(filterTasks);
+      let filterData = data.filter(x => x.status == filter[0] ||  x.status == filter[1] || x.status == filter[2]);
+      setData(filterData);
     }
   }
 
@@ -256,13 +259,27 @@ export default function Home() {
   const expandRow = {
     onlyOneExpanding: true,
     showExpandColumn: true,
-    renderer: row => (
-      <div>
-        <p>{ `This Expand row is belong to rowKey ${row.id}` }</p>
-        <p>You can render anything here, also you can add additional data on every row object</p>
-        <p>expandRow.renderer callback will pass the origin row object to you</p>
-      </div>
-    ),
+    renderer: row => {
+      console.log('renderer', row);
+      let child = tasks.filter(x => x.parent == row.id)
+      return (
+        <BootstrapTable
+          bootstrap4
+          keyField         = "id"
+          data             = {child}
+          columns          = {columns}
+          bordered         = {true}
+          noDataIndication = {'No results found'}
+          selectRow        = {selectRow}
+          expandRow        = {expandRow}
+          pagination       = {paginationFactory({
+            sizePerPage: 20,
+            sizePerPageList: [10, 20, 50, 100]
+          })}
+        />
+      )
+    }
+    ,
     showExpandColumn: true,
     expandHeaderColumnRenderer: ({ isAnyExpands }) => {
       if (isAnyExpands) {
@@ -272,9 +289,8 @@ export default function Home() {
     },
     expandColumnRenderer: ({ expanded }) => {
       if (expanded) {
-        return (
-          <b>-</b>
-        );
+
+        return (<b>-</b>);
       }
       return (
         <b>+</b>
@@ -332,10 +348,16 @@ export default function Home() {
       let selected = tasks.filter(x => x.status != "I").map(a => a.id); 
       setSelected(selected);
 
+      //parent data
+      let data = tasks.filter(x => x.parent == 0);
+      setData(data);
+
       setRefresh(false);
   }, [refresh])
 
-  return (
+  
+
+  return (data && (
     <div>
       <Head>
         <title>ToDoNext</title>
@@ -366,7 +388,7 @@ export default function Home() {
               <BootstrapTable
                 bootstrap4
                 keyField         = "id"
-                data             = {tasks}
+                data             = {data}
                 columns          = {columns}
                 bordered         = {true}
                 noDataIndication = { 'No results found' }
@@ -392,5 +414,5 @@ export default function Home() {
         {/*</main>
       </div>*/}
     </div>
-  )
+  ))
 }
