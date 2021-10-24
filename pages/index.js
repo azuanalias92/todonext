@@ -87,7 +87,7 @@ export default function Home() {
       let parent   = inputs.parent ? inputs.parent : 0;
 
       if(inputs.parent )
-        updateParentCount(tasks, inputs.parent, 'sub', 1);
+        updateParentCount(tasks, inputs.parent, 'sub', 1, 1, "I", "I");
 
       tasks.push({
         'id'      : id,
@@ -114,41 +114,58 @@ export default function Home() {
     }
   };
 
-  const updateParentCount = (tasks, parent, type, value) => {
+  const updateParentCount = (tasks, parent, type, value, comp_value, status, prev) => {
     let input =  tasks.find(x => x.id == parent);
+    console.log('updateParentCount', input);
+    console.log('updateParentCount', parent);
+    console.log('updateParentCount', type);
+    console.log('updateParentCount', value);
+    console.log('updateParentCount', status);
+
+    //change done to completed
+    
+
     switch(type){
       case 'sub' :
         input.sub = parseInt(input.sub) + value;
         break;
       case 'sub_done' :
         input.sub_done = parseInt(input.sub_done) + value;
-        break;
-      case 'sub_comp' :
-        input.sub_comp = parseInt(input.sub_comp) + value;
+        if(status == 'C')
+          input.sub_comp = parseInt(input.sub_comp) + comp_value;
+        if(status == 'I' && prev == 'C')
+          input.sub_comp = parseInt(input.sub_comp) + comp_value;
         break;
     }
+    //get initial value
+    let prev_status = input.status;
+
     if(input.status != "I")
       input.status = input.sub_done == input.sub ? 'C' : 'D';
+      if(input.status == 'C' && prev_status == 'D')
+        comp_value = comp_value + 1;
+      if(input.status == 'D' && prev_status == 'C')
+        comp_value = comp_value - 1;
 
     if(input.parent == 0){
       return tasks.map(obj => inputs.id == parent ? input : obj);
     }else{
-      updateParentCount(tasks, input.parent, type, value);
+      updateParentCount(tasks, input.parent, type, value, comp_value, status, prev);
     }
   };
 
   function labelFormatter(cell, row) {
     let color = "secondary";
-    let text  = "In Progress";
+    let text  = "IN PROGRESS";
 
     switch(cell){
       case "D":
         color = "primary";
-        text  = "Done";
+        text  = "DONE";
         break;
       case "C":
         color = "success";
-        text  = "Completed";
+        text  = "COMPLETE";
         break;
       default:
         break;
@@ -198,6 +215,8 @@ export default function Home() {
   const handleOnSelect = (row, isSelect) => {
 
     let value = 0;
+    let prev_status = row.status;
+
     if(isSelect){
       if(row.sub == 0 || row.sub == row.sub_done){
         row.status = "C";
@@ -211,7 +230,7 @@ export default function Home() {
     }
 
     if(row.parent != 0)
-      updateParentCount(tasks, row.parent, 'sub_done', value);
+      updateParentCount(tasks, row.parent, 'sub_done', value, value, row.status, prev_status);
     
     tasks.map(obj => row == obj.id || obj);
     console.log('handleOnSelect', tasks);
@@ -300,7 +319,7 @@ export default function Home() {
       formatter: subFormattter,
     },{
       dataField: 'sub_comp',
-      text: 'Subtask Completed',
+      text: 'Subtask Complete',
       formatter: subFormattter,
     },{
       dataField: '#',
@@ -348,9 +367,9 @@ export default function Home() {
                 
                 <Col sm="3">
                   <ButtonGroup>
-                    <Button size="sm" color="secondary" onClick={() => handleFilter('I')} active={filter.includes('I')} outline>In Progress</Button>
-                    <Button size="sm" color="primary" onClick={() => handleFilter('D')} active={filter.includes('D')} outline>Done</Button>
-                    <Button size="sm" color="success" onClick={() => handleFilter('C')} active={filter.includes('C')} outline>Completed</Button>
+                    <Button size="sm" color="secondary" onClick={() => handleFilter('I')} active={filter.includes('I')} outline>IN PROGRESS</Button>
+                    <Button size="sm" color="primary" onClick={() => handleFilter('D')} active={filter.includes('D')} outline>DONE</Button>
+                    <Button size="sm" color="success" onClick={() => handleFilter('C')} active={filter.includes('C')} outline>COMPLETE</Button>
                   </ButtonGroup>
                 </Col>
 
