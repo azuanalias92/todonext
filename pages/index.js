@@ -45,12 +45,6 @@ import {
   ButtonGroup
 } from "reactstrap";
 
-const products = [
-    { id: 1, status: "I" , sub: 3, subdone: 2, subcomp: 1, desc: "Create user requirement"},
-    { id: 2, status: "C" , sub: 4, subdone: 2, subcomp: 1, desc: "Design database" },
-    { id: 3, status: "D" , sub: 3, subdone: 2, subcomp: 1, desc: "Unit testing" },
-    { id: 11, status: "I" , sub: 3, subdone: 2, subcomp: 1, desc: "Create user requirement"},
-];
 
 export default function Home() {
   const [modal, setModal]       = useState(false);
@@ -61,24 +55,25 @@ export default function Home() {
   const [selected, setSelected] = useState(false);
   const [refresh, setRefresh]   = useState(false);
 
-  const toggle           = () => setModal(!modal);
-
-  const handleChange = event => {
-    setInputs({
-        ...inputs,
-        [event.target.name]: event.target.value
-    });
-  };
+  const toggle = () => setModal(!modal);
 
   const saveTaskToDatabase = (tasks) => {
     localStorage.setItem('tasks', JSON.stringify(tasks));
     setRefresh(true);
   }
 
+  const handleChange = event => {
+    console.log('handleChange -before', inputs);
+    setInputs({
+        ...inputs,
+        [event.target.name]: event.target.value
+    });
+    console.log('handleChange -after', inputs);
+  };
+
   const saveTask = () => {
+    //allow nextjs to save in localstorage
     if (typeof window !== 'undefined') {
-      // You now have access to `window`
-      //let subtask  = inputs.parent ? tasks.filter( x => x.parent == inputs.parent) : false; 
       let id       = localStorage.getItem('running_id') ? parseInt(localStorage.getItem('running_id')) + 1 : 1;
       let sub      = 0;
       let sub_done = 0; 
@@ -87,7 +82,7 @@ export default function Home() {
       let parent   = inputs.parent ? inputs.parent : 0;
 
       if(inputs.parent )
-        updateParentCount(tasks, inputs.parent, 'sub', 1, 1, "I", "I");
+        updateParentCount(tasks, inputs.parent, 'sub', 1, 0, "I", "I");
 
       tasks.push({
         'id'      : id,
@@ -116,30 +111,20 @@ export default function Home() {
 
   const updateParentCount = (tasks, parent, type, value, comp_value, status, prev) => {
     let input =  tasks.find(x => x.id == parent);
-    console.log('updateParentCount', input);
-    console.log('updateParentCount', parent);
-    console.log('updateParentCount', type);
-    console.log('updateParentCount', value);
-    console.log('updateParentCount', status);
-
-    //change done to completed
-    
 
     switch(type){
       case 'sub' :
-        input.sub = parseInt(input.sub) + value;
+        input.sub      = parseInt(input.sub) + value;
+        input.sub_comp = parseInt(input.sub_comp) + comp_value;
         break;
       case 'sub_done' :
         input.sub_done = parseInt(input.sub_done) + value;
-        if(status == 'C')
-          input.sub_comp = parseInt(input.sub_comp) + comp_value;
-        if(status == 'I' && prev == 'C')
+        if(status == 'C' || (status == 'I' && prev == 'C'))
           input.sub_comp = parseInt(input.sub_comp) + comp_value;
         break;
     }
     //get initial value
     let prev_status = input.status;
-
     if(input.status != "I")
       input.status = input.sub_done == input.sub ? 'C' : 'D';
       if(input.status == 'C' && prev_status == 'D')
@@ -184,15 +169,19 @@ export default function Home() {
           <ButtonGroup>
             <Button size="sm" color="warning" onClick={() => {
               setUpdate(true);
+              //load latest data since action formatter is not updated 
+              let lastest_data  = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
+              let selected_task = lastest_data.find(x => x.id == row.id);
+              console.log('handleChange -row', selected_task);
               setInputs({
                 ...inputs,
-                ['id']      :row.id,
-                ['desc']    :row.desc,
-                ['status']  :row.status,
-                ['parent']  :row.parent,
-                ['sub']     :row.sub,
-                ['sub_done']:row.sub_done,
-                ['sub_comp']:row.sub_comp,
+                ['id']      :selected_task.id,
+                ['desc']    :selected_task.desc,
+                ['status']  :selected_task.status,
+                ['parent']  :selected_task.parent,
+                ['sub']     :selected_task.sub,
+                ['sub_done']:selected_task.sub_done,
+                ['sub_comp']:selected_task.sub_comp,
               });
               toggle();
             }}>Edit</Button>
@@ -233,11 +222,7 @@ export default function Home() {
       updateParentCount(tasks, row.parent, 'sub_done', value, value, row.status, prev_status);
     
     tasks.map(obj => row == obj.id || obj);
-    console.log('handleOnSelect', tasks);
     saveTaskToDatabase(tasks);
-  }
-
-  const handleOnSelectAll = (isSelect, rows) => {
   }
 
   const handleFilter = (selected) => {
@@ -264,7 +249,7 @@ export default function Home() {
     clickToSelect: false,
     clickToExpand: true,
     onSelect     : handleOnSelect,
-    onSelectAll  : handleOnSelectAll,
+    hideSelectAll: true,
     selected     : selected
   };
 
@@ -339,12 +324,15 @@ export default function Home() {
   }
 
   useEffect(() => {
+      //load task data
       let tasks = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
       setTasks(tasks);
-      setRefresh(false);
-
+      
+      //tick selected task
       let selected = tasks.filter(x => x.status != "I").map(a => a.id); 
       setSelected(selected);
+
+      setRefresh(false);
   }, [refresh])
 
   return (
@@ -376,17 +364,15 @@ export default function Home() {
                 <Col sm="1" ><Button color="info" className="float-right" size="sm" onClick={() => { setInputs(false); setUpdate(false); toggle()}}>Add Task</Button>{' '}</Col>
               </Row>
               <BootstrapTable
-                keyField      = "id"
-                data          = {tasks}
-                columns       = {columns}
                 bootstrap4
-                bordered      = {true}
-                //rowStyle      = {rowStyle}
-                //colStyle      = {colStyle}
-                //headerClasses = "header-class"
-                selectRow     = {selectRow}
-                expandRow     = {expandRow}
-                pagination    = {paginationFactory({
+                keyField         = "id"
+                data             = {tasks}
+                columns          = {columns}
+                bordered         = {true}
+                noDataIndication = { 'No results found' }
+                selectRow        = {selectRow}
+                expandRow        = {expandRow}
+                pagination       = {paginationFactory({
                   sizePerPage: 20,
                   sizePerPageList: [10, 20, 50, 100]
                 })}
