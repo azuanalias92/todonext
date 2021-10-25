@@ -84,6 +84,7 @@ export default function Home() {
 
   const clearTask = () => {
     localStorage.clear();
+    toggleClear();
     setRefresh(true);
   }
 
@@ -462,7 +463,7 @@ export default function Home() {
         <CardBody>
           <Row>
             <Col sm="1"><CardTitle tag="h5" className="text-bottom">To Do List</CardTitle></Col>
-            <Col sm="1"><Button color="danger" className="float-right" size="sm" onClick={() => {  toggleClear()}}>Clear Task</Button>{' '}</Col>
+            <Col sm="1"><Button color="danger" className="float-right" size="sm" onClick={() => {toggleClear()}}>Clear Task</Button>{' '}</Col>
             <Col sm="6"></Col>
             <Col sm="3">
               <ButtonGroup>
