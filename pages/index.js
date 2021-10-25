@@ -57,8 +57,10 @@ export default function Home() {
   const [data, setData]         = useState(false);
   const [parent, setParent]     = useState(false);
   const [reassign, setReassign] = useState(false);
+  const [clear, setClear]       = useState(false);
 
-  const toggle = () => setModal(!modal);
+  const toggle      = () => setModal(!modal);
+  const toggleClear = () => setClear(!clear);
 
   const saveTaskToDatabase = (tasks) => {
     localStorage.setItem('tasks', JSON.stringify(tasks));
@@ -79,6 +81,11 @@ export default function Home() {
       });
       setReassign(true);
   };
+
+  const clearTask = () => {
+    localStorage.clear();
+    setRefresh(true);
+  }
 
   const saveTask = () => {
     //allow nextjs to save in localstorage
@@ -454,8 +461,9 @@ export default function Home() {
       <Card className="text-muted">
         <CardBody>
           <Row>
-            <Col sm="8"><CardTitle tag="h5" className="text-bottom">To Do List</CardTitle></Col>
-            
+            <Col sm="1"><CardTitle tag="h5" className="text-bottom">To Do List</CardTitle></Col>
+            <Col sm="1"><Button color="danger" className="float-right" size="sm" onClick={() => {  toggleClear()}}>Clear Task</Button>{' '}</Col>
+            <Col sm="6"></Col>
             <Col sm="3">
               <ButtonGroup>
                 <Button size="sm" color="secondary" onClick={() => handleFilter('I')} active={filter.includes('I')} outline>IN PROGRESS</Button>
@@ -463,8 +471,7 @@ export default function Home() {
                 <Button size="sm" color="success" onClick={() => handleFilter('C')} active={filter.includes('C')} outline>COMPLETE</Button>
               </ButtonGroup>
             </Col>
-
-            <Col sm="1" ><Button color="info" className="float-right" size="sm" onClick={() => { setInputs(false); setUpdate(false); toggle()}}>Add Task</Button>{' '}</Col>
+            <Col sm="1"><Button color="info" className="float-right" size="sm" onClick={() => { setInputs(false); setUpdate(false); toggle()}}>Add Task</Button>{' '}</Col>
           </Row>
           <BootstrapTable
             bootstrap4
@@ -500,6 +507,16 @@ export default function Home() {
           <ModalFooter>
             {update ? <Button color="primary" onClick = {()=>updateTask()}>Update</Button> : <Button color="primary" onClick = {()=>saveTask()}>Submit</Button> }{' '}
             <Button color="secondary"  onClick={toggle} outline>Cancel</Button>
+          </ModalFooter>
+        </Modal>
+        <Modal isOpen={clear} toggle={toggleClear}>
+          <ModalHeader toggle={toggleClear}>Clear Task</ModalHeader>
+          <ModalBody>
+            <p>This action will clear all the tasks. Are you sure?</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="danger" onClick = {()=>clearTask()}>Confirm</Button>
+            <Button color="secondary"  onClick={toggleClear} outline>Cancel</Button>
           </ModalFooter>
         </Modal>
       </Card>
