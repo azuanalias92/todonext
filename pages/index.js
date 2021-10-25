@@ -434,6 +434,7 @@ export default function Home() {
         _data[0].refresh = Math.random(); //to keep data refresh
       setData(_data);
 
+      //create edit list
       let _parent = _tasks.map( a => { return {'label' : a.desc, 'value':a.id }} );
       setParent(_parent);
 
