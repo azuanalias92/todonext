@@ -60,8 +60,6 @@ export default function Home() {
 
   const toggle = () => setModal(!modal);
 
-  console.log('inputs', inputs);
-
   const saveTaskToDatabase = (tasks) => {
     localStorage.setItem('tasks', JSON.stringify(tasks));
     setRefresh(true);
@@ -92,7 +90,7 @@ export default function Home() {
       let tasks    = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
       let parent   = inputs.parent ? inputs.parent : 0;
 
-      if(inputs.parent )
+      if(inputs.parent)
         updateParentCount(tasks, inputs.parent, 'sub', 1, 0, "I", "I");
 
       tasks.push({
@@ -119,57 +117,34 @@ export default function Home() {
 
       if(reassign){
 
-        //find current and change parent
-        let current        = tasks.find(x => x.id == inputs.id);
-        //let current_parent = findParent(current.parent);
-        //let change_parent  = findParent(inputs.parent);
+        //find current sub count
+        let current = tasks.find(x => x.id == inputs.id);
+        let sub     = parseInt(current.sub) + 1;
+        let done    = current.status != "I" ? parseInt(current.sub_done) + 1 : current.sub_done;
+        let comp    = current.status == "C" ? parseInt(current.sub_comp) + 1 : current.sub_comp;
 
-        //calculate count
-        //let count = calculateCount(inputs);
-
-        let sub  = parseInt(current.sub) + 1;
-        let done = current.status != "I" ? parseInt(current.sub_done) + 1 : current.sub_done;
-        let comp = current.status == "C" ? parseInt(current.sub_comp) + 1 : current.sub_comp;
-
+        //minus all to parent sub count
         editTask = changeAllSubToParent(editTask, current.parent, -sub, -done, -comp);
-        console.log('minusAllSubToParent -last', editTask);
+        //add all to parent sub count
         editTask = changeAllSubToParent(editTask, inputs.parent, sub, done, comp);
-        console.log('addAllSubToParent -last', editTask);
         setReassign(false);
       }
-      console.log('editTask', editTask);
+
       saveTaskToDatabase(editTask);
       toggle();
     }
   };
 
 
-  /*const changeAllSubToParent = (editTask, parent, sub, done, comp) => {
-    let task = tasks.find( x => parent == x.id);
-    console.log('minusAllSubToParent', task);
-    console.log('minusAllSubToParent', sub);
-    task.sub = task.sub - sub;
-    task.sub_done = task.sub_done - done;
-    task.sub_comp = task.sub_comp - comp;
-    console.log('minusAllSubToParent', task);
-    
-
-    editTask = editTask.map(obj => task.id == obj.id ? task : obj);
-
-    if(task.parent != 0){
-      return changeAllSubToParent(editTask, task.parent, sub, done, comp);
-    }else{
-      return editTask;
-    }
-  }*/
-
   const changeAllSubToParent = (editTask, parent, sub, done, comp) => {
-    let task = tasks.find( x => parent == x.id);
-    task.sub = task.sub + sub;
+
+    let task      = tasks.find( x => parent == x.id);
+    task.sub      = task.sub + sub;
     task.sub_done = task.sub_done + done;
     task.sub_comp = task.sub_comp + comp;
-    console.log('addAllSubToParent', task);
-
+    if((task.sub == 0 && task.status == 'D') || (task.sub_done == task.sub && task.status == 'D'))
+      task.status = 'C'; //change status Done to Completed
+ 
     editTask = editTask.map(obj => task.id == obj.id ? task : obj);
 
     if(task.parent != 0){
@@ -179,7 +154,7 @@ export default function Home() {
     }
   }
 
-  const calculateCount = (inputs) => {
+  /*const calculateCount = (inputs) => {
     let count = countSubTask(inputs.id, inputs.status);
 
     //current row
@@ -194,9 +169,9 @@ export default function Home() {
     parent.sub_comp =  parseInt(parent.sub_comp) + count.comp;
 
     return count;
-  }
+  }*/
 
-  const countSubTask = (id, status) => {
+  /*const countSubTask = (id, status) => {
     let subtask = tasks.find(x => x.parent == id);
     if(subtask){
       console.log('countSubTask', subtask);
@@ -207,22 +182,20 @@ export default function Home() {
       count.sub  = parseInt(count.sub) + 1;
       count.done = parseInt(count.done) + done;
       count.comp = parseInt(count.comp) + comp;
-
-      console.log('countSubTask', count);
       return count;
     }else{
       return {'sub':0, 'done':0, 'comp':0};
     }
-  }
+  }*/
 
-  const findParent = (id_parent) => {
+  /*const findParent = (id_parent) => {
     let parent = tasks.find(x => x.id == id_parent);
     if(parent.parent != 0){
       return findParent(parent.parent);
     }else{
       return parent.id;
     }
-  }
+  }*/
 
   const updateParentCount = (tasks, parent, type, value, comp_value, status, prev) => {
     let input =  tasks.find(x => x.id == parent);
@@ -240,12 +213,15 @@ export default function Home() {
     }
     //get initial value
     let prev_status = input.status;
-    if(input.status != "I")
+    if(input.status != "I"){
       input.status = input.sub_done == input.sub ? 'C' : 'D';
-      if(input.status == 'C' && prev_status == 'D')
+      //add or minus complete value
+      if(input.status == 'C' && prev_status == 'D') 
         comp_value = comp_value + 1;
       if(input.status == 'D' && prev_status == 'C')
         comp_value = comp_value - 1;
+    }
+      
 
     if(input.parent == 0){
       return tasks.map(obj => inputs.id == parent ? input : obj);
@@ -408,11 +384,11 @@ export default function Home() {
     {
       dataField: 'id',
       text     : 'Task ID',
-      //hidden   : true,
+      hidden   : true,
     }, {
       dataField: 'parent',
       text     : 'Parent ID',
-      //hidden   : true,
+      hidden   : true,
     },{
       dataField: 'desc',
       text     : 'Description'
