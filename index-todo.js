@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import Head from "next/head";
-import "bootstrap/dist/css/bootstrap.min.css";
+// import "bootstrap/dist/css/bootstrap.min.css";
+// import "react-bootstrap-table-next/dist/react-bootstrap-table2.min.css";
+// import "react-bootstrap-table2-paginator/dist/react-bootstrap-table2-paginator.min.css";
+// import BootstrapTable from "react-bootstrap-table-next";
+// import paginationFactory from "react-bootstrap-table2-paginator";
 import { Card, CardBody, CardTitle, Col, Row, Input, Button, Badge, Navbar, NavbarBrand, Modal, ModalBody, ModalHeader, ModalFooter, Form, ButtonGroup } from "reactstrap";
-import { FaChevronDown, FaChevronUp, FaEdit, FaFile, FaFileAlt, FaFileArchive, FaFileImport, FaPlus, FaTimes, FaTrash } from "react-icons/fa";
+import { FaEdit, FaFile, FaFileAlt, FaFileArchive, FaFileImport, FaPlus, FaTimes, FaTrash } from "react-icons/fa";
 import Select from "react-select";
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable, getPaginationRowModel, getFilteredRowModel, getExpandedRowModel } from "@tanstack/react-table";
-
-const columnHelper = createColumnHelper();
 
 export default function Home() {
-  const [data, setData] = useState(false);
   const [modal, setModal] = useState(false);
   const [filter, setFilter] = useState([]);
   const [update, setUpdate] = useState(false);
@@ -17,173 +17,12 @@ export default function Home() {
   const [tasks, setTasks] = useState(false);
   const [selected, setSelected] = useState(false);
   const [refresh, setRefresh] = useState(false);
+  const [data, setData] = useState(false);
   const [parent, setParent] = useState(false);
   const [reassign, setReassign] = useState(false);
   const [clear, setClear] = useState(false);
   const toggle = () => setModal(!modal);
   const toggleClear = () => setClear(!clear);
-  const [expanded, setExpanded] = React.useState({});
-
-  function IndeterminateCheckbox({ indeterminate, className = "", ...rest }) {
-    const ref = useRef();
-    useEffect(() => {
-      if (typeof indeterminate === "boolean") {
-        ref.current.indeterminate = !rest.checked && indeterminate;
-      }
-    }, [ref, indeterminate]);
-
-    return <input type="checkbox" ref={ref} className={className + " cursor-pointer"} {...rest} />;
-  }
-
-  function actionFormatter(id) {
-    return (
-      <div>
-        <Button
-          className="m-1"
-          size="sm"
-          color="warning"
-          onClick={() => {
-            setUpdate(true);
-            //load latest data since action formatter is not updated
-            let lastest_data = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
-            let selected_task = lastest_data.find((x) => x.id == id);
-            setInputs({
-              ...inputs,
-              ["id"]: selected_task.id,
-              ["desc"]: selected_task.desc,
-              ["status"]: selected_task.status,
-              ["parent"]: selected_task.parent,
-              ["sub"]: selected_task.sub,
-              ["sub_done"]: selected_task.sub_done,
-              ["sub_comp"]: selected_task.sub_comp,
-            });
-            toggle();
-          }}
-        >
-          <FaEdit className="me-1" />
-          Edit
-        </Button>
-        <Button
-          className="m-1"
-          size="sm"
-          color="info"
-          onClick={() => {
-            setUpdate(false);
-            setInputs({ ["parent"]: id });
-            toggle();
-          }}
-        >
-          <FaFileImport className="me-1" />
-          Subtask
-        </Button>
-      </div>
-    );
-  }
-  const columns = React.useMemo(
-    () => [
-      {
-        accessorKey: "id",
-        header: ({ table }) => (
-          <>
-            <IndeterminateCheckbox
-              {...{
-                checked: table.getIsAllRowsSelected(),
-                indeterminate: table.getIsSomeRowsSelected(),
-                onChange: table.getToggleAllRowsSelectedHandler(),
-              }}
-            />{" "}
-            <button
-              className="btn"
-              {...{
-                onClick: table.getToggleAllRowsExpandedHandler(),
-              }}
-            >
-              {table.getIsAllRowsExpanded() ? <FaChevronDown /> : <FaChevronUp />}
-            </button>
-          </>
-        ),
-        cell: ({ row, getValue }) => (
-          <div
-            style={{
-              // Since rows are flattened by default,
-              // we can use the row.depth property
-              // and paddingLeft to visually indicate the depth
-              // of the row
-              paddingLeft: `${row.depth * 2}rem`,
-            }}
-          >
-            <>
-              <IndeterminateCheckbox
-                {...{
-                  checked: row.getIsSelected(),
-                  indeterminate: row.getIsSomeSelected(),
-                  onChange: row.getToggleSelectedHandler(),
-                }}
-              />{" "}
-              {row.getCanExpand() && (
-                <button
-                  className="btn"
-                  {...{
-                    onClick: row.getToggleExpandedHandler(),
-                    style: { cursor: "pointer" },
-                  }}
-                >
-                  {row.getIsExpanded() ? <FaChevronDown /> : <FaChevronUp />}
-                </button>
-              )}
-            </>
-          </div>
-        ),
-        footer: (props) => props.column.id,
-      },
-      {
-        accessorKey: "id",
-        header: () => "Task ID",
-        footer: (props) => props.column.id,
-      },
-      {
-        accessorKey: "desc",
-        header: () => "Description",
-        footer: (props) => props.column.desc,
-      },
-      {
-        accessorKey: "status",
-        header: () => "Status",
-        cell: (info) => labelFormatter(info.getValue()),
-        footer: (props) => props.column.status,
-      },
-      {
-        accessorKey: "sub_done",
-        header: () => "Subtask Done",
-        footer: (props) => props.column.sub_done,
-      },
-      {
-        accessorKey: "sub_comp",
-        header: () => "Subtask Completed",
-        footer: (props) => props.column.sub_comp,
-      },
-      {
-        accessorKey: "id",
-        header: () => "Action",
-        cell: (info) => actionFormatter(info.getValue()),
-        footer: (props) => props.column.id,
-      },
-    ],
-    []
-  );
-
-  const table = useReactTable({
-    data,
-    columns,
-    state: { expanded },
-    onExpandedChange: setExpanded,
-    getSubRows: (row) => row.subRows,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
-    debugTable: true,
-  });
 
   const saveTaskToDatabase = (tasks) => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -219,54 +58,22 @@ export default function Home() {
       let sub_done = 0;
       let sub_comp = 0;
       let tasks = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
-      let parent = inputs.parent ? inputs.parent : null;
-      //if (inputs.parent) updateParentCount(tasks, inputs.parent, "sub", 1, 0, "I", "I");
+      let parent = inputs.parent ? inputs.parent : 0;
 
-      //add subRows
-      if (parent) {
-        //get the parent
-        const newTasks = tasks.map((x) => {
-          if (x.id == parent) {
-            if (x.subRows) {
-              x.subRows.push({
-                id: id,
-                parent: parent,
-                status: "I",
-                sub: sub,
-                sub_done: sub_done,
-                sub_comp: sub_comp,
-                desc: inputs.desc,
-              });
-            } else {
-              x.subRows = [
-                {
-                  id: id,
-                  parent: parent,
-                  status: "I",
-                  sub: sub,
-                  sub_done: sub_done,
-                  sub_comp: sub_comp,
-                  desc: inputs.desc,
-                },
-              ];
-            }
-          }
-          return x;
-        });
-        saveTaskToDatabase(newTasks);
-      } else {
-        tasks.push({
-          id: id,
-          parent: parent,
-          status: "I",
-          sub: sub,
-          sub_done: sub_done,
-          sub_comp: sub_comp,
-          desc: inputs.desc,
-        });
-        saveTaskToDatabase(tasks);
-      }
+      if (inputs.parent) updateParentCount(tasks, inputs.parent, "sub", 1, 0, "I", "I");
+
+      tasks.push({
+        id: id,
+        parent: parent,
+        status: "I",
+        sub: sub,
+        sub_done: sub_done,
+        sub_comp: sub_comp,
+        desc: inputs.desc,
+      });
+
       localStorage.setItem("running_id", id);
+      saveTaskToDatabase(tasks);
       toggle();
     }
   };
@@ -384,7 +191,7 @@ export default function Home() {
     }
   };
 
-  function labelFormatter(cell) {
+  function labelFormatter(cell, row) {
     let color = "badge bg-secondary";
     let text = "IN PROGRESS";
 
@@ -402,7 +209,52 @@ export default function Home() {
         text = "IN PROGRESS";
         break;
     }
-    return <span class={color}>{text}</span>;
+    return null;
+  }
+
+  function actionFormatter(cell, row) {
+    return (
+      <div>
+        <Button
+          className="m-1"
+          size="sm"
+          color="warning"
+          onClick={() => {
+            setUpdate(true);
+            //load latest data since action formatter is not updated
+            let lastest_data = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
+            let selected_task = lastest_data.find((x) => x.id == row.id);
+            setInputs({
+              ...inputs,
+              ["id"]: selected_task.id,
+              ["desc"]: selected_task.desc,
+              ["status"]: selected_task.status,
+              ["parent"]: selected_task.parent,
+              ["sub"]: selected_task.sub,
+              ["sub_done"]: selected_task.sub_done,
+              ["sub_comp"]: selected_task.sub_comp,
+            });
+            toggle();
+          }}
+        >
+          <FaEdit className="me-1" />
+          Edit
+        </Button>
+        <Button
+          className="m-1"
+          size="sm"
+          color="info"
+          onClick={() => {
+            setUpdate(false);
+            setInputs({ ["parent"]: row.id });
+            toggle();
+          }}
+        >
+          <FaFileImport className="me-1" />
+          Subtask
+        </Button>
+      </div>
+    );
   }
 
   function subFormattter(cell, row) {
@@ -469,7 +321,7 @@ export default function Home() {
     showExpandColumn: true,
     renderer: (row) => {
       let child = tasks.filter((x) => x.parent == row.id);
-      return null;
+      return null
     },
     showExpandColumn: true,
     expandHeaderColumnRenderer: ({ isAnyExpands }) => {
@@ -486,11 +338,60 @@ export default function Home() {
     },
   };
 
+  const columns = [
+    {
+      dataField: "id",
+      text: "Task ID",
+      hidden: true,
+    },
+    {
+      dataField: "parent",
+      text: "Parent ID",
+      hidden: true,
+    },
+    {
+      dataField: "desc",
+      text: "Description",
+      headerStyle: { width: 90 },
+    },
+    {
+      dataField: "status",
+      text: "Status",
+      formatter: labelFormatter,
+      headerAlign: "center",
+      align: "center",
+      headerStyle: { width: 120 },
+    },
+    {
+      dataField: "sub_done",
+      text: "Subtask Done",
+      formatter: subFormattter,
+      headerAlign: "center",
+      align: "center",
+      headerStyle: { width: 90 },
+    },
+    {
+      dataField: "sub_comp",
+      text: "Subtask Complete",
+      formatter: subFormattter,
+      headerAlign: "center",
+      align: "center",
+      headerStyle: { width: 90 },
+    },
+    {
+      dataField: "#",
+      text: "Action",
+      formatter: actionFormatter,
+      headerAlign: "right",
+      align: "right",
+      headerStyle: { width: 90 },
+    },
+  ];
+
   useEffect(() => {
     //load task data
     let _tasks = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
     setTasks(_tasks);
-    setData(_tasks);
 
     //tick selected task
     let _selected = _tasks.filter((x) => x.status != "I").map((a) => a.id);
@@ -499,6 +400,7 @@ export default function Home() {
     //parent data
     let _data = _tasks.filter((x) => x.parent == 0);
     if (_data[0]) _data[0].refresh = Math.random(); //to keep data refresh
+    setData(_data);
 
     //create edit list
     let _parent = _tasks.map((a) => {
@@ -509,7 +411,7 @@ export default function Home() {
   }, [refresh]);
 
   return (
-    <>
+    <div>
       <Head>
         <title>ToDoNext</title>
         <meta name="description" content="Generated by create next app" />
@@ -571,36 +473,8 @@ export default function Home() {
               </ButtonGroup>
             </Col>
           </Row>
-          <div class="table-responsive ">
-            <table className="table table-bordered table-striped table-hover">
-              <thead>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th key={header.id}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}</th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-              {/* <tfoot>
-                {table.getFooterGroups().map((footerGroup) => (
-                  <tr key={footerGroup.id}>
-                    {footerGroup.headers.map((header) => (
-                      <th key={header.id}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.footer, header.getContext())}</th>
-                    ))}
-                  </tr>
-                ))}
-              </tfoot> */}
-            </table>
+          <div className="m-1" style={{ overflow: "scroll" }}>
+            
           </div>
         </CardBody>
         <Modal isOpen={modal} toggle={toggle}>
@@ -653,6 +527,6 @@ export default function Home() {
           </ModalFooter>
         </Modal>
       </Card>
-    </>
+    </div>
   );
 }
