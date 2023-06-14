@@ -79,6 +79,7 @@ export default function Home() {
       </div>
     );
   }
+
   const columns = React.useMemo(
     () => [
       {
@@ -211,6 +212,47 @@ export default function Home() {
     setRefresh(true);
   };
 
+  const recursiveFindParent = (tasks, parent, id, desc) => {
+    console.log("parent", parent);
+
+    const newTasks = tasks.map((x) => {
+      console.log("parent - x", x.id);
+      //check parent id first
+      if (x.id == parent) {
+        if (x.subRows) {
+          x.subRows.push({
+            id: id,
+            parent: parent,
+            status: "I",
+            desc: desc,
+          });
+        } else {
+          x.subRows = [
+            {
+              id: id,
+              parent: parent,
+              status: "I",
+              desc: desc,
+            },
+          ];
+        }
+        return x;
+      } else {
+        if (x.subRows) {
+          const newSubRow = recursiveFindParent(x.subRows, parent, id, desc);
+          x.subRows = newSubRow;
+          return x;
+        } else {
+          return x;
+        }
+      }
+    });
+
+    console.log("parent - newTasks", newTasks);
+
+    return newTasks;
+  };
+
   const saveTask = () => {
     //allow nextjs to save in localstorage
     if (typeof window !== "undefined") {
@@ -220,39 +262,11 @@ export default function Home() {
       let sub_comp = 0;
       let tasks = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
       let parent = inputs.parent ? inputs.parent : null;
-      //if (inputs.parent) updateParentCount(tasks, inputs.parent, "sub", 1, 0, "I", "I");
 
       //add subRows
       if (parent) {
         //get the parent
-        const newTasks = tasks.map((x) => {
-          if (x.id == parent) {
-            if (x.subRows) {
-              x.subRows.push({
-                id: id,
-                parent: parent,
-                status: "I",
-                sub: sub,
-                sub_done: sub_done,
-                sub_comp: sub_comp,
-                desc: inputs.desc,
-              });
-            } else {
-              x.subRows = [
-                {
-                  id: id,
-                  parent: parent,
-                  status: "I",
-                  sub: sub,
-                  sub_done: sub_done,
-                  sub_comp: sub_comp,
-                  desc: inputs.desc,
-                },
-              ];
-            }
-          }
-          return x;
-        });
+        const newTasks = recursiveFindParent(tasks, parent, id, inputs.desc);
         saveTaskToDatabase(newTasks);
       } else {
         tasks.push({
@@ -493,18 +507,18 @@ export default function Home() {
     setData(_tasks);
 
     //tick selected task
-    let _selected = _tasks.filter((x) => x.status != "I").map((a) => a.id);
-    setSelected(_selected);
+    //let _selected = _tasks.filter((x) => x.status != "I").map((a) => a.id);
+    //setSelected(_selected);
 
     //parent data
-    let _data = _tasks.filter((x) => x.parent == 0);
-    if (_data[0]) _data[0].refresh = Math.random(); //to keep data refresh
+    //let _data = _tasks.filter((x) => x.parent == 0);
+    //if (_data[0]) _data[0].refresh = Math.random(); //to keep data refresh
 
     //create edit list
-    let _parent = _tasks.map((a) => {
-      return { label: a.desc, value: a.id };
-    });
-    setParent(_parent);
+    // let _parent = _tasks.map((a) => {
+    //   return { label: a.desc, value: a.id };
+    // });
+    // setParent(_parent);
     setRefresh(false);
   }, [refresh]);
 
