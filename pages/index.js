@@ -1,117 +1,79 @@
-import React, { useState, useEffect } from 'react';
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import 'react-bootstrap-table-next/dist/react-bootstrap-table2.min.css'
-import 'react-bootstrap-table2-paginator/dist/react-bootstrap-table2-paginator.min.css'
-import BootstrapTable from 'react-bootstrap-table-next'
-import paginationFactory from "react-bootstrap-table2-paginator"
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  CardSubtitle,
-  Col,
-  Container,
-  Row,
-  Input,
-  InputGroup,
-  InputGroupAddon,
-  Button,
-  Media,
-  Badge,
-  Navbar,
-  NavbarBrand,
-  NavbarToggler,
-  Collapse,
-  Nav,
-  NavItem,
-  NavLink,
-  UncontrolledDropdown,
-  DropdownToggle,
-  DropdownMenu,
-  DropdownItem,
-  NavbarText,
-  ButtonToggle,
-  Modal,
-  ModalBody,
-  ModalHeader,
-  ModalFooter,
-  Form,
-  FormGroup,
-  Label,
-  ButtonGroup
-} from "reactstrap";
-import Select from 'react-select';
+import React, { useState, useEffect } from "react";
+import Head from "next/head";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "react-bootstrap-table-next/dist/react-bootstrap-table2.min.css";
+import "react-bootstrap-table2-paginator/dist/react-bootstrap-table2-paginator.min.css";
+import BootstrapTable from "react-bootstrap-table-next";
+import paginationFactory from "react-bootstrap-table2-paginator";
+import { Card, CardBody, CardTitle, Col, Row, Input, Button, Badge, Navbar, NavbarBrand, Modal, ModalBody, ModalHeader, ModalFooter, Form, ButtonGroup } from "reactstrap";
+import { FaBeer, FaEdit, FaFile, FaFileAlt, FaFileArchive, FaFileImport, FaPlus, FaTimes, FaTrash } from "react-icons/fa";
+import Select from "react-select";
 
 export default function Home() {
-  const [modal, setModal]       = useState(false);
-  const [filter, setFilter]     = useState([]);
-  const [update, setUpdate]     = useState(false);
-  const [inputs, setInputs]     = useState(false);
-  const [tasks, setTasks]       = useState(false);
+  const [modal, setModal] = useState(false);
+  const [filter, setFilter] = useState([]);
+  const [update, setUpdate] = useState(false);
+  const [inputs, setInputs] = useState(false);
+  const [tasks, setTasks] = useState(false);
   const [selected, setSelected] = useState(false);
-  const [refresh, setRefresh]   = useState(false);
-  const [data, setData]         = useState(false);
-  const [parent, setParent]     = useState(false);
+  const [refresh, setRefresh] = useState(false);
+  const [data, setData] = useState(false);
+  const [parent, setParent] = useState(false);
   const [reassign, setReassign] = useState(false);
-  const [clear, setClear]       = useState(false);
+  const [clear, setClear] = useState(false);
 
-  const toggle      = () => setModal(!modal);
+  const toggle = () => setModal(!modal);
   const toggleClear = () => setClear(!clear);
 
   const saveTaskToDatabase = (tasks) => {
-    localStorage.setItem('tasks', JSON.stringify(tasks));
+    localStorage.setItem("tasks", JSON.stringify(tasks));
     setRefresh(true);
-  }
+  };
 
-  const handleChange = event => {
+  const handleChange = (event) => {
     setInputs({
-        ...inputs,
-        [event.target.name]: event.target.value
+      ...inputs,
+      [event.target.name]: event.target.value,
     });
   };
 
   const handleChangeSelect = (value, name) => {
-      setInputs({
-          ...inputs,
-          [name]: value
-      });
-      setReassign(true);
+    setInputs({
+      ...inputs,
+      [name]: value,
+    });
+    setReassign(true);
   };
 
   const clearTask = () => {
     localStorage.clear();
     toggleClear();
     setRefresh(true);
-  }
+  };
 
   const saveTask = () => {
     //allow nextjs to save in localstorage
-    if (typeof window !== 'undefined') {
-      let id       = localStorage.getItem('running_id') ? parseInt(localStorage.getItem('running_id')) + 1 : 1;
-      let sub      = 0;
-      let sub_done = 0; 
+    if (typeof window !== "undefined") {
+      let id = localStorage.getItem("running_id") ? parseInt(localStorage.getItem("running_id")) + 1 : 1;
+      let sub = 0;
+      let sub_done = 0;
       let sub_comp = 0;
-      let tasks    = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
-      let parent   = inputs.parent ? inputs.parent : 0;
+      let tasks = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
+      let parent = inputs.parent ? inputs.parent : 0;
 
-      if(inputs.parent)
-        updateParentCount(tasks, inputs.parent, 'sub', 1, 0, "I", "I");
+      if (inputs.parent) updateParentCount(tasks, inputs.parent, "sub", 1, 0, "I", "I");
 
       tasks.push({
-        'id'      : id,
-        'parent'  : parent, 
-        'status'  : 'I', 
-        'sub'     : sub, 
-        'sub_done': sub_done, 
-        'sub_comp': sub_comp, 
-        'desc'    : inputs.desc
+        id: id,
+        parent: parent,
+        status: "I",
+        sub: sub,
+        sub_done: sub_done,
+        sub_comp: sub_comp,
+        desc: inputs.desc,
       });
 
-      localStorage.setItem('running_id', id);
+      localStorage.setItem("running_id", id);
       saveTaskToDatabase(tasks);
       toggle();
     }
@@ -119,17 +81,16 @@ export default function Home() {
 
   const updateTask = () => {
     //allow nextjs to save in localstorage
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       //edit current row
-      let editTask = tasks.map(obj => inputs.id == obj.id ? inputs : obj);
+      let editTask = tasks.map((obj) => (inputs.id == obj.id ? inputs : obj));
 
-      if(reassign){
-
+      if (reassign) {
         //find current sub count
-        let current = tasks.find(x => x.id == inputs.id);
-        let sub     = parseInt(current.sub) + 1;
-        let done    = current.status != "I" ? parseInt(current.sub_done) + 1 : current.sub_done;
-        let comp    = current.status == "C" ? parseInt(current.sub_comp) + 1 : current.sub_comp;
+        let current = tasks.find((x) => x.id == inputs.id);
+        let sub = parseInt(current.sub) + 1;
+        let done = current.status != "I" ? parseInt(current.sub_done) + 1 : current.sub_done;
+        let comp = current.status == "C" ? parseInt(current.sub_comp) + 1 : current.sub_comp;
 
         //minus all to parent sub count
         editTask = changeAllSubToParent(editTask, current.parent, -sub, -done, -comp);
@@ -143,24 +104,21 @@ export default function Home() {
     }
   };
 
-
   const changeAllSubToParent = (editTask, parent, sub, done, comp) => {
-
-    let task      = tasks.find( x => parent == x.id);
-    task.sub      = task.sub + sub;
+    let task = tasks.find((x) => parent == x.id);
+    task.sub = task.sub + sub;
     task.sub_done = task.sub_done + done;
     task.sub_comp = task.sub_comp + comp;
-    if((task.sub == 0 && task.status == 'D') || (task.sub_done == task.sub && task.status == 'D'))
-      task.status = 'C'; //change status Done to Completed
- 
-    editTask = editTask.map(obj => task.id == obj.id ? task : obj);
+    if ((task.sub == 0 && task.status == "D") || (task.sub_done == task.sub && task.status == "D")) task.status = "C"; //change status Done to Completed
 
-    if(task.parent != 0){
+    editTask = editTask.map((obj) => (task.id == obj.id ? task : obj));
+
+    if (task.parent != 0) {
       return changeAllSubToParent(editTask, task.parent, sub, done, comp);
-    }else{
+    } else {
       return editTask;
     }
-  }
+  };
 
   /*const calculateCount = (inputs) => {
     let count = countSubTask(inputs.id, inputs.status);
@@ -206,117 +164,130 @@ export default function Home() {
   }*/
 
   const updateParentCount = (tasks, parent, type, value, comp_value, status, prev) => {
-    let input =  tasks.find(x => x.id == parent);
+    let input = tasks.find((x) => x.id == parent);
 
-    switch(type){
-      case 'sub' :
-        input.sub      = parseInt(input.sub) + value;
+    switch (type) {
+      case "sub":
+        input.sub = parseInt(input.sub) + value;
         input.sub_comp = parseInt(input.sub_comp) + comp_value;
         break;
-      case 'sub_done' :
+      case "sub_done":
         input.sub_done = parseInt(input.sub_done) + value;
-        if(status == 'C' || (status == 'I' && prev == 'C'))
-          input.sub_comp = parseInt(input.sub_comp) + comp_value;
+        if (status == "C" || (status == "I" && prev == "C")) input.sub_comp = parseInt(input.sub_comp) + comp_value;
         break;
     }
     //get initial value
     let prev_status = input.status;
-    if(input.status != "I"){
-      input.status = input.sub_done == input.sub ? 'C' : 'D';
+    if (input.status != "I") {
+      input.status = input.sub_done == input.sub ? "C" : "D";
       //add or minus complete value
-      if(input.status == 'C' && prev_status == 'D') 
-        comp_value = comp_value + 1;
-      if(input.status == 'D' && prev_status == 'C')
-        comp_value = comp_value - 1;
+      if (input.status == "C" && prev_status == "D") comp_value = comp_value + 1;
+      if (input.status == "D" && prev_status == "C") comp_value = comp_value - 1;
     }
-      
 
-    if(input.parent == 0){
-      return tasks.map(obj => inputs.id == parent ? input : obj);
-    }else{
+    if (input.parent == 0) {
+      return tasks.map((obj) => (inputs.id == parent ? input : obj));
+    } else {
       updateParentCount(tasks, input.parent, type, value, comp_value, status, prev);
     }
   };
 
   function labelFormatter(cell, row) {
-    let color = "secondary";
-    let text  = "IN PROGRESS";
+    let color = "badge bg-secondary";
+    let text = "IN PROGRESS";
 
-    switch(cell){
+    switch (cell) {
       case "D":
-        color = "primary";
-        text  = "DONE";
+        color = "badge bg-primary";
+        text = "DONE";
         break;
       case "C":
-        color = "success";
-        text  = "COMPLETE";
+        color = "badge bg-succes";
+        text = "COMPLETE";
         break;
       default:
+        color = "badge bg-secondary";
+        text = "IN PROGRESS";
         break;
     }
-
-    return (<span><Badge color={color}>{text}</Badge></span>);
+    return (
+      <span style={{ overflowWrap: "break-word" }} class={color}>
+        <div style={{ overflowWrap: "break-word" }}>{text}</div>
+      </span>
+    );
   }
 
   function actionFormatter(cell, row) {
-      return (
-        <div>
-          <ButtonGroup>
-            <Button size="sm" color="warning" onClick={() => {
-              setUpdate(true);
-              //load latest data since action formatter is not updated 
-              let lastest_data  = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
-              let selected_task = lastest_data.find(x => x.id == row.id);
-              setInputs({
-                ...inputs,
-                ['id']      :selected_task.id,
-                ['desc']    :selected_task.desc,
-                ['status']  :selected_task.status,
-                ['parent']  :selected_task.parent,
-                ['sub']     :selected_task.sub,
-                ['sub_done']:selected_task.sub_done,
-                ['sub_comp']:selected_task.sub_comp,
-              });
-              toggle();
-            }}>Edit</Button>
-            <Button size="sm" color="info" onClick={() => {
-              setUpdate(false);
-              setInputs({['parent'] :row.id});
-              toggle();
-            }}>Subtask</Button>
-          </ButtonGroup>
-          
-        </div>
-      );
+    return (
+      <div>
+        <Button
+          className="m-1"
+          size="sm"
+          color="warning"
+          onClick={() => {
+            setUpdate(true);
+            //load latest data since action formatter is not updated
+            let lastest_data = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
+            let selected_task = lastest_data.find((x) => x.id == row.id);
+            setInputs({
+              ...inputs,
+              ["id"]: selected_task.id,
+              ["desc"]: selected_task.desc,
+              ["status"]: selected_task.status,
+              ["parent"]: selected_task.parent,
+              ["sub"]: selected_task.sub,
+              ["sub_done"]: selected_task.sub_done,
+              ["sub_comp"]: selected_task.sub_comp,
+            });
+            toggle();
+          }}
+        >
+          <FaEdit className="me-1" />
+          Edit
+        </Button>
+        <Button
+          className="m-1"
+          size="sm"
+          color="info"
+          onClick={() => {
+            setUpdate(false);
+            setInputs({ ["parent"]: row.id });
+            toggle();
+          }}
+        >
+          <FaFileImport className="me-1" />
+          Subtask
+        </Button>
+      </div>
+    );
   }
 
-  function subFormattter(cell, row){
-    let subtask = row.sub != 0 ? ((cell + '/' + row.sub) + ' - ' + (cell/row.sub * 100).toFixed(0) +  '%') : 'N/A';
-    return (<p>{subtask}</p>);
+  function subFormattter(cell, row) {
+    let subtask = row.sub != 0 ? cell + "/" + row.sub + " - " + ((cell / row.sub) * 100).toFixed(0) + "%" : "N/A";
+    return <p>{subtask}</p>;
   }
 
   const handleOnSelect = (row, isSelect) => {
-    let value       = 0;
+    let value = 0;
     let prev_status = row.status;
 
-    if(isSelect){
-      if(row.sub == 0 || row.sub == row.sub_done){
+    if (isSelect) {
+      if (row.sub == 0 || row.sub == row.sub_done) {
         row.status = "C";
-      }else{
+      } else {
         row.status = "D";
       }
-      value      = 1;
-    }else{
+      value = 1;
+    } else {
       row.status = "I";
-      value      = -1;
+      value = -1;
     }
 
-    if(row.parent != 0)
-      updateParentCount(tasks, row.parent, 'sub_done', value, value, row.status, prev_status);
-    
-    tasks.map(obj => row == obj.id || obj);
+    if (row.parent != 0) updateParentCount(tasks, row.parent, "sub_done", value, value, row.status, prev_status);
+
+    tasks.map((obj) => row == obj.id || obj);
     saveTaskToDatabase(tasks);
-  }
+  };
 
   const handleFilter = (selected) => {
     const index = filter.indexOf(selected);
@@ -326,53 +297,53 @@ export default function Home() {
       filter.splice(index, 1);
     }
     setFilter([...filter]);
-    
-    let tasks = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
-    let data  = tasks.filter(x => x.parent == 0);
-  
-    if(filter.length === 0){
+
+    let tasks = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
+    let data = tasks.filter((x) => x.parent == 0);
+
+    if (filter.length === 0) {
       setTasks(tasks);
       setData(data);
-    }else{
-      let filterTasks = tasks.filter(x => x.status == filter[0] ||  x.status == filter[1] || x.status == filter[2]);
+    } else {
+      let filterTasks = tasks.filter((x) => x.status == filter[0] || x.status == filter[1] || x.status == filter[2]);
       setTasks(filterTasks);
-      let filterData = data.filter(x => x.status == filter[0] ||  x.status == filter[1] || x.status == filter[2]);
+      let filterData = data.filter((x) => x.status == filter[0] || x.status == filter[1] || x.status == filter[2]);
       setData(filterData);
     }
-  }
+  };
 
   const selectRow = {
-    mode         : 'checkbox',
+    mode: "checkbox",
     clickToSelect: false,
     clickToExpand: true,
-    onSelect     : handleOnSelect,
+    onSelect: handleOnSelect,
     hideSelectAll: true,
-    selected     : selected
+    selected: selected,
   };
 
   const expandRow = {
     onlyOneExpanding: true,
     showExpandColumn: true,
-    renderer: row => {
-      let child = tasks.filter(x => x.parent == row.id)
+    renderer: (row) => {
+      let child = tasks.filter((x) => x.parent == row.id);
       return (
         <BootstrapTable
           bootstrap4
-          keyField         = "id"
-          data             = {child}
-          columns          = {columns}
-          bordered         = {true}
-          noDataIndication = {'No results found'}
-          selectRow        = {selectRow}
-          expandRow        = {expandRow}
-          pagination       = {paginationFactory({
-            sizePerPage: 20,
-            sizePerPageList: [10, 20, 50, 100]
+          keyField="id"
+          data={child}
+          columns={columns}
+          bordered={true}
+          noDataIndication={"No results found"}
+          selectRow={selectRow}
+          expandRow={expandRow}
+          style={{ overflowWrap: "break-word", overflow: "auto", display: "block" }}
+          pagination={paginationFactory({
+            sizePerPage: 5,
+            sizePerPageList: [5, 10, 20, 50, 100],
           })}
         />
-      )
-    }
-    ,
+      );
+    },
     showExpandColumn: true,
     expandHeaderColumnRenderer: ({ isAnyExpands }) => {
       if (isAnyExpands) {
@@ -382,145 +353,221 @@ export default function Home() {
     },
     expandColumnRenderer: ({ expanded }) => {
       if (expanded) {
-        return (<b>-</b>);
+        return <b>-</b>;
       }
       return <b>+</b>;
-    }
+    },
   };
 
   const columns = [
     {
-      dataField: 'id',
-      text     : 'Task ID',
-      hidden   : true,
-    }, {
-      dataField: 'parent',
-      text     : 'Parent ID',
-      hidden   : true,
-    },{
-      dataField: 'desc',
-      text     : 'Description'
-    },{
-      dataField  : 'status',
-      text       : 'Status',
-      formatter  : labelFormatter,
-      headerAlign: 'center',
-      align      : 'center',
-    },{
-      dataField  : 'sub_done',
-      text       : 'Subtask Done',
-      formatter  : subFormattter,
-      headerAlign: 'center',
-      align      : 'center',
-    },{
-      dataField  : 'sub_comp',
-      text       : 'Subtask Complete',
-      formatter  : subFormattter,
-      headerAlign: 'center',
-      align      : 'center',
-    },{
-      dataField  : '#',
-      text       : 'Action',
-      formatter  : actionFormatter,
-      headerAlign: 'right',
-      align      : 'right'
-    }
+      dataField: "id",
+      text: "Task ID",
+      hidden: true,
+    },
+    {
+      dataField: "parent",
+      text: "Parent ID",
+      hidden: true,
+    },
+    {
+      dataField: "desc",
+      text: "Description",
+      headerStyle: { width: 90 },
+    },
+    {
+      dataField: "status",
+      text: "Status",
+      formatter: labelFormatter,
+      headerAlign: "center",
+      align: "center",
+      headerStyle: { width: 120 },
+    },
+    {
+      dataField: "sub_done",
+      text: "Subtask Done",
+      formatter: subFormattter,
+      headerAlign: "center",
+      align: "center",
+      headerStyle: { width: 90 },
+    },
+    {
+      dataField: "sub_comp",
+      text: "Subtask Complete",
+      formatter: subFormattter,
+      headerAlign: "center",
+      align: "center",
+      headerStyle: { width: 90 },
+    },
+    {
+      dataField: "#",
+      text: "Action",
+      formatter: actionFormatter,
+      headerAlign: "right",
+      align: "right",
+      headerStyle: { width: 90 },
+    },
   ];
 
   useEffect(() => {
-      //load task data
-      let _tasks = localStorage.getItem('tasks') ? JSON.parse(localStorage.getItem('tasks')) : [];
-      setTasks(_tasks);
-      
-      //tick selected task
-      let _selected = _tasks.filter(x => x.status != "I").map(a => a.id); 
-      setSelected(_selected);
+    //load task data
+    let _tasks = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
+    setTasks(_tasks);
 
-      //parent data
-      let _data = _tasks.filter(x => x.parent == 0);
-      if(_data[0])
-        _data[0].refresh = Math.random(); //to keep data refresh
-      setData(_data);
+    //tick selected task
+    let _selected = _tasks.filter((x) => x.status != "I").map((a) => a.id);
+    setSelected(_selected);
 
-      //create edit list
-      let _parent = _tasks.map( a => { return {'label' : a.desc, 'value':a.id }} );
-      setParent(_parent);
+    //parent data
+    let _data = _tasks.filter((x) => x.parent == 0);
+    if (_data[0]) _data[0].refresh = Math.random(); //to keep data refresh
+    setData(_data);
 
-      setRefresh(false);
-  }, [refresh])
+    //create edit list
+    let _parent = _tasks.map((a) => {
+      return { label: a.desc, value: a.id };
+    });
+    setParent(_parent);
 
-  return (data && parent && tasks &&(
-    <div>
-      <Head>
-        <title>ToDoNext</title>
-        <meta name="description" content="Generated by create next app" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <Navbar color="dark" dark expand="md">
-        <NavbarBrand href="/">ToDoNext</NavbarBrand>
-      </Navbar>
-      <Card className="text-muted">
-        <CardBody>
-          <Row>
-            <Col sm="1"><CardTitle tag="h5" className="text-bottom">To Do List</CardTitle></Col>
-            <Col sm="1"><Button color="danger" className="float-right" size="sm" onClick={() => {toggleClear()}}>Clear Task</Button>{' '}</Col>
-            <Col sm="6"></Col>
-            <Col sm="3">
-              <ButtonGroup>
-                <Button size="sm" color="secondary" onClick={() => handleFilter('I')} active={filter.includes('I')} outline>IN PROGRESS</Button>
-                <Button size="sm" color="primary" onClick={() => handleFilter('D')} active={filter.includes('D')} outline>DONE</Button>
-                <Button size="sm" color="success" onClick={() => handleFilter('C')} active={filter.includes('C')} outline>COMPLETE</Button>
-              </ButtonGroup>
-            </Col>
-            <Col sm="1"><Button color="info" className="float-right" size="sm" onClick={() => { setInputs(false); setUpdate(false); toggle()}}>Add Task</Button>{' '}</Col>
-          </Row>
-          <BootstrapTable
-            bootstrap4
-            keyField         = "id"
-            data             = {data}
-            columns          = {columns}
-            bordered         = {true}
-            noDataIndication = {'No results found'}
-            selectRow        = {selectRow}
-            expandRow        = {expandRow}
-            pagination       = {paginationFactory({
-              sizePerPage: 20,
-              sizePerPageList: [5, 10, 20, 50, 100]
-            })}
-          />
-        </CardBody>
-        <Modal isOpen={modal} toggle={toggle}>
-          <ModalHeader toggle={toggle}>{update ? 'Update Task': 'Add Task' }</ModalHeader>
-          <ModalBody>
-          <Form>
-            <FormGroup>
-              <Label for="desc">Task Description</Label>
-              <Input type="text" name="desc" id="desc" placeholder="Task Description" bsSize="lg" onChange={handleChange} value={inputs.desc}/>
-            </FormGroup>
-            {update ? 
-              <FormGroup>
-                <Label for="parent">Parent Task</Label>
-                <Select name="parent" id="parent" options={parent.filter(x => x.value !== inputs.id)} value={parent.find(x => x.value === inputs.parent)} onChange={selected => handleChangeSelect(selected.value, "parent")} /> 
-              </FormGroup>
-            : null}
-          </Form>
-          </ModalBody>
-          <ModalFooter>
-            {update ? <Button color="primary" onClick = {()=>updateTask()}>Update</Button> : <Button color="primary" onClick = {()=>saveTask()}>Submit</Button> }{' '}
-            <Button color="secondary"  onClick={toggle} outline>Cancel</Button>
-          </ModalFooter>
-        </Modal>
-        <Modal isOpen={clear} toggle={toggleClear}>
-          <ModalHeader toggle={toggleClear}>Clear Task</ModalHeader>
-          <ModalBody>
-            <p>This action will clear all the tasks. Are you sure?</p>
-          </ModalBody>
-          <ModalFooter>
-            <Button color="danger" onClick = {()=>clearTask()}>Confirm</Button>
-            <Button color="secondary"  onClick={toggleClear} outline>Cancel</Button>
-          </ModalFooter>
-        </Modal>
-      </Card>
-    </div>
-  ))
+    setRefresh(false);
+  }, [refresh]);
+
+  return (
+    data &&
+    parent &&
+    tasks && (
+      <div>
+        <Head>
+          <title>ToDoNext</title>
+          <meta name="description" content="Generated by create next app" />
+          <link rel="icon" href="/favicon.ico" />
+        </Head>
+        <Navbar color="dark" dark expand="md" full={true}>
+          <NavbarBrand className="mx-4" href="/">
+            ToDoNext
+          </NavbarBrand>
+        </Navbar>
+        <Card className="text-muted">
+          <CardBody>
+            <Row className="">
+              <Col sm="6" xs="12" className="p-1">
+                <CardTitle tag="h5" className="text-bottom">
+                  To Do List
+                </CardTitle>
+              </Col>
+              <Col sm="6" xs="12">
+                <Button
+                  color="danger"
+                  className="float-end m-1"
+                  size="sm"
+                  onClick={() => {
+                    toggleClear();
+                  }}
+                >
+                  <FaTrash className="me-1" />
+                  Clear Task
+                </Button>
+
+                <Button
+                  color="primary"
+                  className="float-end m-1"
+                  size="sm"
+                  onClick={() => {
+                    setInputs(false);
+                    setUpdate(false);
+                    toggle();
+                  }}
+                >
+                  <FaPlus className="me-1" />
+                  Add Task
+                </Button>
+
+                <ButtonGroup className="float-end m-1">
+                  <Button size="sm" color="secondary" onClick={() => handleFilter("I")} active={filter.includes("I")} outline>
+                    <FaFile className="me-1" />
+                    IN PROGRESS
+                  </Button>
+                  <Button size="sm" color="primary" onClick={() => handleFilter("D")} active={filter.includes("D")} outline>
+                    <FaFileAlt className="me-1" />
+                    DONE
+                  </Button>
+                  <Button size="sm" color="success" onClick={() => handleFilter("C")} active={filter.includes("C")} outline>
+                    <FaFileArchive className="me-1" />
+                    COMPLETE
+                  </Button>
+                </ButtonGroup>
+              </Col>
+            </Row>
+            <div className="m-1" style={{ overflow: "scroll", overflowX: "auto" }}>
+              <BootstrapTable
+                bootstrap4
+                keyField="id"
+                data={data}
+                columns={columns}
+                bordered={true}
+                noDataIndication={"No results found"}
+                selectRow={selectRow}
+                expandRow={expandRow}
+                style={{ overflowWrap: "break-word", overflow: "scroll", display: "auto", overflowX: "auto" }}
+                wrapperClasses="table-responsive"
+                pagination={paginationFactory({
+                  sizePerPage: 10,
+                  sizePerPageList: [5, 10, 20, 50, 100],
+                })}
+              />
+            </div>
+          </CardBody>
+          <Modal isOpen={modal} toggle={toggle}>
+            <ModalHeader toggle={toggle}>{update ? "Update Task" : "Add Task"}</ModalHeader>
+            <ModalBody>
+              <Form>
+                <Input bsSize="sm" className="m-1" type="text" name="desc" id="desc" placeholder="Task Description" onChange={handleChange} value={inputs.desc} />
+                {update ? (
+                  <Select
+                    className="m-1"
+                    name="parent"
+                    id="parent"
+                    options={parent.filter((x) => x.value !== inputs.id)}
+                    value={parent.find((x) => x.value === inputs.parent)}
+                    onChange={(selected) => handleChangeSelect(selected.value, "parent")}
+                    placeholder="Select Parent Task"
+                  />
+                ) : null}
+              </Form>
+            </ModalBody>
+            <ModalFooter>
+              {update ? (
+                <Button color="primary" onClick={() => updateTask()}>
+                  <FaEdit className="me-1" />
+                  Update
+                </Button>
+              ) : (
+                <Button color="primary" onClick={() => saveTask()}>
+                  Submit
+                </Button>
+              )}{" "}
+              <Button color="secondary" onClick={toggle} outline>
+                <FaTimes className="me-1" />
+                Cancel
+              </Button>
+            </ModalFooter>
+          </Modal>
+          <Modal isOpen={clear} toggle={toggleClear}>
+            <ModalHeader toggle={toggleClear}>Clear Task</ModalHeader>
+            <ModalBody>
+              <p>This action will clear all the tasks. Are you sure?</p>
+            </ModalBody>
+            <ModalFooter>
+              <Button color="danger" onClick={() => clearTask()}>
+                Confirm
+              </Button>
+              <Button color="secondary" onClick={toggleClear} outline>
+                Cancel
+              </Button>
+            </ModalFooter>
+          </Modal>
+        </Card>
+      </div>
+    )
+  );
 }
