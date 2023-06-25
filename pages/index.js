@@ -77,19 +77,26 @@ export default function Home() {
     );
   }
 
-  const findRecursiveTask = (id, tasks, task) => {
-    tasks.map((t) => {
-      if (t.id == id) {
-        task = t;
+  const findRecursiveTask = (id, tasks, oritask, counter, oricounter) => {
+    const task = tasks.find((f) => f.id == id);
+    if (task) {
+      return task;
+    } else {
+      if (tasks[counter].subRows) {
+        //find in subrow
+        return findRecursiveTask(
+          id,
+          tasks[counter].subRows,
+          oritask,
+          0,
+          counter
+        );
       } else {
-        if (t.subRows) {
-          findRecursiveTask(id, t.subRows, task);
-        }
+        //go next
+        ++oricounter;
+        return findRecursiveTask(id, oritask, oritask, oricounter, oricounter);
       }
-    });
-
-    console.log("terms", task);
-    return task;
+    }
   };
 
   function actionFormatter(id) {
@@ -101,29 +108,13 @@ export default function Home() {
           color="warning"
           onClick={() => {
             setUpdate(true);
-            console.log("midnight", id);
             const tasks = localStorage.getItem("tasks")
               ? JSON.parse(localStorage.getItem("tasks"))
               : [];
 
             let task = null;
-            task = findRecursiveTask(id, tasks, task);
-
-            console.log("term", task);
-
-            //load latest data since action formatter is not updated
-            // let lastest_data = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
-            // let selected_task = lastest_data.find((x) => x.id == id);
-            // setInputs({
-            //   ...inputs,
-            //   ["id"]: selected_task.id,
-            //   ["desc"]: selected_task.desc,
-            //   ["status"]: selected_task.status,
-            //   ["parent"]: selected_task.parent,
-            //   ["sub"]: selected_task.sub,
-            //   ["sub_done"]: selected_task.sub_done,
-            //   ["sub_comp"]: selected_task.sub_comp,
-            // });
+            task = findRecursiveTask(id, tasks, tasks, 0, 0);
+            setInputs(task);
             toggle();
           }}
         >
@@ -268,7 +259,7 @@ export default function Home() {
       [event.target.name]: event.target.value,
     });
   };
-  
+
   const clearTask = () => {
     localStorage.clear();
     toggleClear();
@@ -348,11 +339,29 @@ export default function Home() {
     }
   };
 
+  const recursiveUpdateTask = (tasks, id) => {
+    const newTasks = tasks.map((task) => {
+      if (task.id == id) {
+        task.desc = inputs.desc;
+        return task;
+      } else {
+        if (task.subRows) {
+          let temp = recursiveUpdateTask(task.subRows, id);
+          task.subRows = temp;
+          return task;
+        } else {
+          return task;
+        }
+      }
+    });
+
+    return newTasks;
+  };
+
   const updateTask = () => {
     //allow nextjs to save in localstorage
     if (typeof window !== "undefined") {
-      //edit current row
-      let editTask = tasks.map((obj) => (inputs.id == obj.id ? inputs : obj));
+      const editTask = recursiveUpdateTask(tasks, inputs.id);
       saveTaskToDatabase(editTask);
       toggle();
     }
