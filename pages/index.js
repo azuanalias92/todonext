@@ -1,10 +1,46 @@
 import React, { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Card, CardBody, CardTitle, Col, Row, Input, Button, Badge, Navbar, NavbarBrand, Modal, ModalBody, ModalHeader, ModalFooter, Form, ButtonGroup } from "reactstrap";
-import { FaChevronDown, FaChevronUp, FaEdit, FaFile, FaFileAlt, FaFileArchive, FaFileImport, FaPlus, FaTimes, FaTrash } from "react-icons/fa";
+import {
+  Card,
+  CardBody,
+  CardTitle,
+  Col,
+  Row,
+  Input,
+  Button,
+  Badge,
+  Navbar,
+  NavbarBrand,
+  Modal,
+  ModalBody,
+  ModalHeader,
+  ModalFooter,
+  Form,
+  ButtonGroup,
+} from "reactstrap";
+import {
+  FaChevronDown,
+  FaChevronUp,
+  FaEdit,
+  FaFile,
+  FaFileAlt,
+  FaFileArchive,
+  FaFileImport,
+  FaPlus,
+  FaTimes,
+  FaTrash,
+} from "react-icons/fa";
 import Select from "react-select";
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable, getPaginationRowModel, getFilteredRowModel, getExpandedRowModel } from "@tanstack/react-table";
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  getPaginationRowModel,
+  getFilteredRowModel,
+  getExpandedRowModel,
+} from "@tanstack/react-table";
 
 const columnHelper = createColumnHelper();
 
@@ -17,7 +53,6 @@ export default function Home() {
   const [tasks, setTasks] = useState(false);
   const [selected, setSelected] = useState(false);
   const [refresh, setRefresh] = useState(false);
-  const [parent, setParent] = useState(false);
   const [reassign, setReassign] = useState(false);
   const [clear, setClear] = useState(false);
   const toggle = () => setModal(!modal);
@@ -32,8 +67,30 @@ export default function Home() {
       }
     }, [ref, indeterminate]);
 
-    return <input type="checkbox" ref={ref} className={className + " cursor-pointer"} {...rest} />;
+    return (
+      <input
+        type="checkbox"
+        ref={ref}
+        className={className + " cursor-pointer"}
+        {...rest}
+      />
+    );
   }
+
+  const findRecursiveTask = (id, tasks, task) => {
+    tasks.map((t) => {
+      if (t.id == id) {
+        task = t;
+      } else {
+        if (t.subRows) {
+          findRecursiveTask(id, t.subRows, task);
+        }
+      }
+    });
+
+    console.log("terms", task);
+    return task;
+  };
 
   function actionFormatter(id) {
     return (
@@ -44,19 +101,29 @@ export default function Home() {
           color="warning"
           onClick={() => {
             setUpdate(true);
+            console.log("midnight", id);
+            const tasks = localStorage.getItem("tasks")
+              ? JSON.parse(localStorage.getItem("tasks"))
+              : [];
+
+            let task = null;
+            task = findRecursiveTask(id, tasks, task);
+
+            console.log("term", task);
+
             //load latest data since action formatter is not updated
-            let lastest_data = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
-            let selected_task = lastest_data.find((x) => x.id == id);
-            setInputs({
-              ...inputs,
-              ["id"]: selected_task.id,
-              ["desc"]: selected_task.desc,
-              ["status"]: selected_task.status,
-              ["parent"]: selected_task.parent,
-              ["sub"]: selected_task.sub,
-              ["sub_done"]: selected_task.sub_done,
-              ["sub_comp"]: selected_task.sub_comp,
-            });
+            // let lastest_data = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
+            // let selected_task = lastest_data.find((x) => x.id == id);
+            // setInputs({
+            //   ...inputs,
+            //   ["id"]: selected_task.id,
+            //   ["desc"]: selected_task.desc,
+            //   ["status"]: selected_task.status,
+            //   ["parent"]: selected_task.parent,
+            //   ["sub"]: selected_task.sub,
+            //   ["sub_done"]: selected_task.sub_done,
+            //   ["sub_comp"]: selected_task.sub_comp,
+            // });
             toggle();
           }}
         >
@@ -99,7 +166,11 @@ export default function Home() {
                 onClick: table.getToggleAllRowsExpandedHandler(),
               }}
             >
-              {table.getIsAllRowsExpanded() ? <FaChevronDown /> : <FaChevronUp />}
+              {table.getIsAllRowsExpanded() ? (
+                <FaChevronDown />
+              ) : (
+                <FaChevronUp />
+              )}
             </button>
           </>
         ),
@@ -197,15 +268,7 @@ export default function Home() {
       [event.target.name]: event.target.value,
     });
   };
-
-  const handleChangeSelect = (value, name) => {
-    setInputs({
-      ...inputs,
-      [name]: value,
-    });
-    setReassign(true);
-  };
-
+  
   const clearTask = () => {
     localStorage.clear();
     toggleClear();
@@ -213,8 +276,6 @@ export default function Home() {
   };
 
   const recursiveFindParent = (tasks, parent, id, desc) => {
-    console.log("parent", parent);
-
     const newTasks = tasks.map((x) => {
       console.log("parent - x", x.id);
       //check parent id first
@@ -248,19 +309,21 @@ export default function Home() {
       }
     });
 
-    console.log("parent - newTasks", newTasks);
-
     return newTasks;
   };
 
   const saveTask = () => {
     //allow nextjs to save in localstorage
     if (typeof window !== "undefined") {
-      let id = localStorage.getItem("running_id") ? parseInt(localStorage.getItem("running_id")) + 1 : 1;
+      let id = localStorage.getItem("running_id")
+        ? parseInt(localStorage.getItem("running_id")) + 1
+        : 1;
       let sub = 0;
       let sub_done = 0;
       let sub_comp = 0;
-      let tasks = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
+      let tasks = localStorage.getItem("tasks")
+        ? JSON.parse(localStorage.getItem("tasks"))
+        : [];
       let parent = inputs.parent ? inputs.parent : null;
 
       //add subRows
@@ -290,21 +353,6 @@ export default function Home() {
     if (typeof window !== "undefined") {
       //edit current row
       let editTask = tasks.map((obj) => (inputs.id == obj.id ? inputs : obj));
-
-      if (reassign) {
-        //find current sub count
-        let current = tasks.find((x) => x.id == inputs.id);
-        let sub = parseInt(current.sub) + 1;
-        let done = current.status != "I" ? parseInt(current.sub_done) + 1 : current.sub_done;
-        let comp = current.status == "C" ? parseInt(current.sub_comp) + 1 : current.sub_comp;
-
-        //minus all to parent sub count
-        editTask = changeAllSubToParent(editTask, current.parent, -sub, -done, -comp);
-        //add all to parent sub count
-        editTask = changeAllSubToParent(editTask, inputs.parent, sub, done, comp);
-        setReassign(false);
-      }
-
       saveTaskToDatabase(editTask);
       toggle();
     }
@@ -315,7 +363,11 @@ export default function Home() {
     task.sub = task.sub + sub;
     task.sub_done = task.sub_done + done;
     task.sub_comp = task.sub_comp + comp;
-    if ((task.sub == 0 && task.status == "D") || (task.sub_done == task.sub && task.status == "D")) task.status = "C"; //change status Done to Completed
+    if (
+      (task.sub == 0 && task.status == "D") ||
+      (task.sub_done == task.sub && task.status == "D")
+    )
+      task.status = "C"; //change status Done to Completed
 
     editTask = editTask.map((obj) => (task.id == obj.id ? task : obj));
 
@@ -326,50 +378,15 @@ export default function Home() {
     }
   };
 
-  /*const calculateCount = (inputs) => {
-    let count = countSubTask(inputs.id, inputs.status);
-
-    //current row
-    count.sub  = parseInt(count.sub) + 1;
-    count.done = inputs.status != "I" ? parseInt(count.done) + 1 : count.done;
-    count.comp = inputs.status == "C" ? parseInt(count.comp) + 1 : count.comp;
-
-    //update parent
-    let parent = tasks.find(obj => inputs.parent == obj.id);
-    parent.sub      =  parseInt(parent.sub) + count.sub;
-    parent.sub_done =  parseInt(parent.sub_done) + count.done;
-    parent.sub_comp =  parseInt(parent.sub_comp) + count.comp;
-
-    return count;
-  }*/
-
-  /*const countSubTask = (id, status) => {
-    let subtask = tasks.find(x => x.parent == id);
-    if(subtask){
-      console.log('countSubTask', subtask);
-      let count = countSubTask(subtask.id, subtask.status);
-      let done = subtask.status != "I" ? 1 : 0;
-      let comp = subtask.status == "C" ? 1 : 0; 
-
-      count.sub  = parseInt(count.sub) + 1;
-      count.done = parseInt(count.done) + done;
-      count.comp = parseInt(count.comp) + comp;
-      return count;
-    }else{
-      return {'sub':0, 'done':0, 'comp':0};
-    }
-  }*/
-
-  /*const findParent = (id_parent) => {
-    let parent = tasks.find(x => x.id == id_parent);
-    if(parent.parent != 0){
-      return findParent(parent.parent);
-    }else{
-      return parent.id;
-    }
-  }*/
-
-  const updateParentCount = (tasks, parent, type, value, comp_value, status, prev) => {
+  const updateParentCount = (
+    tasks,
+    parent,
+    type,
+    value,
+    comp_value,
+    status,
+    prev
+  ) => {
     let input = tasks.find((x) => x.id == parent);
 
     switch (type) {
@@ -379,7 +396,8 @@ export default function Home() {
         break;
       case "sub_done":
         input.sub_done = parseInt(input.sub_done) + value;
-        if (status == "C" || (status == "I" && prev == "C")) input.sub_comp = parseInt(input.sub_comp) + comp_value;
+        if (status == "C" || (status == "I" && prev == "C"))
+          input.sub_comp = parseInt(input.sub_comp) + comp_value;
         break;
     }
     //get initial value
@@ -387,14 +405,24 @@ export default function Home() {
     if (input.status != "I") {
       input.status = input.sub_done == input.sub ? "C" : "D";
       //add or minus complete value
-      if (input.status == "C" && prev_status == "D") comp_value = comp_value + 1;
-      if (input.status == "D" && prev_status == "C") comp_value = comp_value - 1;
+      if (input.status == "C" && prev_status == "D")
+        comp_value = comp_value + 1;
+      if (input.status == "D" && prev_status == "C")
+        comp_value = comp_value - 1;
     }
 
     if (input.parent == 0) {
       return tasks.map((obj) => (inputs.id == parent ? input : obj));
     } else {
-      updateParentCount(tasks, input.parent, type, value, comp_value, status, prev);
+      updateParentCount(
+        tasks,
+        input.parent,
+        type,
+        value,
+        comp_value,
+        status,
+        prev
+      );
     }
   };
 
@@ -416,35 +444,8 @@ export default function Home() {
         text = "IN PROGRESS";
         break;
     }
-    return <span class={color}>{text}</span>;
+    return <span className={color}>{text}</span>;
   }
-
-  function subFormattter(cell, row) {
-    let subtask = row.sub != 0 ? cell + "/" + row.sub + " - " + ((cell / row.sub) * 100).toFixed(0) + "%" : "N/A";
-    return <p>{subtask}</p>;
-  }
-
-  const handleOnSelect = (row, isSelect) => {
-    let value = 0;
-    let prev_status = row.status;
-
-    if (isSelect) {
-      if (row.sub == 0 || row.sub == row.sub_done) {
-        row.status = "C";
-      } else {
-        row.status = "D";
-      }
-      value = 1;
-    } else {
-      row.status = "I";
-      value = -1;
-    }
-
-    if (row.parent != 0) updateParentCount(tasks, row.parent, "sub_done", value, value, row.status, prev_status);
-
-    tasks.map((obj) => row == obj.id || obj);
-    saveTaskToDatabase(tasks);
-  };
 
   const handleFilter = (selected) => {
     const index = filter.indexOf(selected);
@@ -455,70 +456,39 @@ export default function Home() {
     }
     setFilter([...filter]);
 
-    let tasks = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
+    let tasks = localStorage.getItem("tasks")
+      ? JSON.parse(localStorage.getItem("tasks"))
+      : [];
     let data = tasks.filter((x) => x.parent == 0);
 
     if (filter.length === 0) {
       setTasks(tasks);
       setData(data);
     } else {
-      let filterTasks = tasks.filter((x) => x.status == filter[0] || x.status == filter[1] || x.status == filter[2]);
+      let filterTasks = tasks.filter(
+        (x) =>
+          x.status == filter[0] ||
+          x.status == filter[1] ||
+          x.status == filter[2]
+      );
       setTasks(filterTasks);
-      let filterData = data.filter((x) => x.status == filter[0] || x.status == filter[1] || x.status == filter[2]);
+      let filterData = data.filter(
+        (x) =>
+          x.status == filter[0] ||
+          x.status == filter[1] ||
+          x.status == filter[2]
+      );
       setData(filterData);
     }
   };
 
-  const selectRow = {
-    mode: "checkbox",
-    clickToSelect: false,
-    clickToExpand: true,
-    onSelect: handleOnSelect,
-    hideSelectAll: true,
-    selected: selected,
-  };
-
-  const expandRow = {
-    onlyOneExpanding: true,
-    showExpandColumn: true,
-    renderer: (row) => {
-      let child = tasks.filter((x) => x.parent == row.id);
-      return null;
-    },
-    showExpandColumn: true,
-    expandHeaderColumnRenderer: ({ isAnyExpands }) => {
-      if (isAnyExpands) {
-        return <b>-</b>;
-      }
-      return <b>+</b>;
-    },
-    expandColumnRenderer: ({ expanded }) => {
-      if (expanded) {
-        return <b>-</b>;
-      }
-      return <b>+</b>;
-    },
-  };
-
   useEffect(() => {
     //load task data
-    let _tasks = localStorage.getItem("tasks") ? JSON.parse(localStorage.getItem("tasks")) : [];
+    let _tasks = localStorage.getItem("tasks")
+      ? JSON.parse(localStorage.getItem("tasks"))
+      : [];
     setTasks(_tasks);
     setData(_tasks);
-
-    //tick selected task
-    //let _selected = _tasks.filter((x) => x.status != "I").map((a) => a.id);
-    //setSelected(_selected);
-
-    //parent data
-    //let _data = _tasks.filter((x) => x.parent == 0);
-    //if (_data[0]) _data[0].refresh = Math.random(); //to keep data refresh
-
-    //create edit list
-    // let _parent = _tasks.map((a) => {
-    //   return { label: a.desc, value: a.id };
-    // });
-    // setParent(_parent);
     setRefresh(false);
   }, [refresh]);
 
@@ -570,28 +540,53 @@ export default function Home() {
               </Button>
 
               <ButtonGroup className="float-end m-1">
-                <Button size="sm" color="secondary" onClick={() => handleFilter("I")} active={filter.includes("I")} outline>
+                <Button
+                  size="sm"
+                  color="secondary"
+                  onClick={() => handleFilter("I")}
+                  active={filter.includes("I")}
+                  outline
+                >
                   <FaFile className="me-1" />
                   IN PROGRESS
                 </Button>
-                <Button size="sm" color="primary" onClick={() => handleFilter("D")} active={filter.includes("D")} outline>
+                <Button
+                  size="sm"
+                  color="primary"
+                  onClick={() => handleFilter("D")}
+                  active={filter.includes("D")}
+                  outline
+                >
                   <FaFileAlt className="me-1" />
                   DONE
                 </Button>
-                <Button size="sm" color="success" onClick={() => handleFilter("C")} active={filter.includes("C")} outline>
+                <Button
+                  size="sm"
+                  color="success"
+                  onClick={() => handleFilter("C")}
+                  active={filter.includes("C")}
+                  outline
+                >
                   <FaFileArchive className="me-1" />
                   COMPLETE
                 </Button>
               </ButtonGroup>
             </Col>
           </Row>
-          <div class="table-responsive ">
+          <div className="table-responsive ">
             <table className="table table-bordered table-striped table-hover">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                      <th key={header.id}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}</th>
+                      <th key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </th>
                     ))}
                   </tr>
                 ))}
@@ -600,7 +595,12 @@ export default function Home() {
                 {table.getRowModel().rows.map((row) => (
                   <tr key={row.id}>
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                      <td key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
                     ))}
                   </tr>
                 ))}
@@ -618,11 +618,22 @@ export default function Home() {
           </div>
         </CardBody>
         <Modal isOpen={modal} toggle={toggle}>
-          <ModalHeader toggle={toggle}>{update ? "Update Task" : "Add Task"}</ModalHeader>
+          <ModalHeader toggle={toggle}>
+            {update ? "Update Task" : "Add Task"}
+          </ModalHeader>
           <ModalBody>
             <Form>
-              <Input bsSize="sm" className="m-1" type="text" name="desc" id="desc" placeholder="Task Description" onChange={handleChange} value={inputs.desc} />
-              {update ? (
+              <Input
+                bsSize="sm"
+                className="m-1"
+                type="text"
+                name="desc"
+                id="desc"
+                placeholder="Task Description"
+                onChange={handleChange}
+                value={inputs.desc}
+              />
+              {/* {update ? (
                 <Select
                   className="m-1"
                   name="parent"
@@ -632,7 +643,7 @@ export default function Home() {
                   onChange={(selected) => handleChangeSelect(selected.value, "parent")}
                   placeholder="Select Parent Task"
                 />
-              ) : null}
+              ) : null} */}
             </Form>
           </ModalBody>
           <ModalFooter>
