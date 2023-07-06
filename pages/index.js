@@ -42,8 +42,6 @@ import {
   getExpandedRowModel,
 } from "@tanstack/react-table";
 
-const columnHelper = createColumnHelper();
-
 export default function Home() {
   const [data, setData] = useState(false);
   const [modal, setModal] = useState(false);
@@ -51,19 +49,20 @@ export default function Home() {
   const [update, setUpdate] = useState(false);
   const [inputs, setInputs] = useState(false);
   const [tasks, setTasks] = useState(false);
-  const [selected, setSelected] = useState(false);
   const [refresh, setRefresh] = useState(false);
-  const [reassign, setReassign] = useState(false);
   const [clear, setClear] = useState(false);
   const toggle = () => setModal(!modal);
   const toggleClear = () => setClear(!clear);
   const [expanded, setExpanded] = React.useState({});
+  const [rowSelection, setRowSelection] = React.useState({})
+
 
   function IndeterminateCheckbox({ indeterminate, className = "", ...rest }) {
     const ref = useRef();
     useEffect(() => {
       if (typeof indeterminate === "boolean") {
         ref.current.indeterminate = !rest.checked && indeterminate;
+        console.log("IndeterminateCheckbox", rest);
       }
     }, [ref, indeterminate]);
 
@@ -141,7 +140,7 @@ export default function Home() {
   const columns = React.useMemo(
     () => [
       {
-        accessorKey: "id",
+        accessorKey: "click",
         header: ({ table }) => (
           <>
             <IndeterminateCheckbox
@@ -165,38 +164,41 @@ export default function Home() {
             </button>
           </>
         ),
-        cell: ({ row, getValue }) => (
-          <div
-            style={{
-              // Since rows are flattened by default,
-              // we can use the row.depth property
-              // and paddingLeft to visually indicate the depth
-              // of the row
-              paddingLeft: `${row.depth * 2}rem`,
-            }}
-          >
-            <>
-              <IndeterminateCheckbox
-                {...{
-                  checked: row.getIsSelected(),
-                  indeterminate: row.getIsSomeSelected(),
-                  onChange: row.getToggleSelectedHandler(),
-                }}
-              />{" "}
-              {row.getCanExpand() && (
-                <button
-                  className="btn"
+        cell: ({ row }) => {
+          console.log("row.getValue()", row);
+          return (
+            <div
+              style={{
+                // Since rows are flattened by default,
+                // we can use the row.depth property
+                // and paddingLeft to visually indicate the depth
+                // of the row
+                paddingLeft: `${row.depth * 2}rem`,
+              }}
+            >
+              <>
+                <IndeterminateCheckbox
                   {...{
-                    onClick: row.getToggleExpandedHandler(),
-                    style: { cursor: "pointer" },
+                    checked: row.getIsSelected(),
+                    indeterminate: row.getIsSomeSelected(),
+                    onChange: row.getToggleSelectedHandler(),
                   }}
-                >
-                  {row.getIsExpanded() ? <FaChevronDown /> : <FaChevronUp />}
-                </button>
-              )}
-            </>
-          </div>
-        ),
+                />{" "}
+                {row.getCanExpand() && (
+                  <button
+                    className="btn"
+                    {...{
+                      onClick: row.getToggleExpandedHandler(),
+                      style: { cursor: "pointer" },
+                    }}
+                  >
+                    {row.getIsExpanded() ? <FaChevronDown /> : <FaChevronUp />}
+                  </button>
+                )}
+              </>
+            </div>
+          );
+        },
         footer: (props) => props.column.id,
       },
       {
@@ -226,7 +228,7 @@ export default function Home() {
         footer: (props) => props.column.sub_comp,
       },
       {
-        accessorKey: "id",
+        accessorKey: "action",
         header: () => "Action",
         cell: (info) => actionFormatter(info.getValue()),
         footer: (props) => props.column.id,
@@ -238,7 +240,9 @@ export default function Home() {
   const table = useReactTable({
     data,
     columns,
-    state: { expanded },
+    state: { expanded, rowSelection },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     onExpandedChange: setExpanded,
     getSubRows: (row) => row.subRows,
     getCoreRowModel: getCoreRowModel(),
@@ -501,6 +505,12 @@ export default function Home() {
     setRefresh(false);
   }, [refresh]);
 
+  useEffect(() => {
+    if(rowSelection){
+      console.log(rowSelection);
+    }
+  }, [rowSelection])
+
   return (
     <>
       <Head>
@@ -601,28 +611,23 @@ export default function Home() {
                 ))}
               </thead>
               <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+                {table.getRowModel().rows.map((row) => {
+                  return (
+                    <tr key={row.original.id}>
+                      {row.getVisibleCells().map((cell) => {
+                        return (
+                          <td key={cell.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
-              {/* <tfoot>
-                {table.getFooterGroups().map((footerGroup) => (
-                  <tr key={footerGroup.id}>
-                    {footerGroup.headers.map((header) => (
-                      <th key={header.id}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.footer, header.getContext())}</th>
-                    ))}
-                  </tr>
-                ))}
-              </tfoot> */}
             </table>
           </div>
         </CardBody>
