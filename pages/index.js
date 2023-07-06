@@ -59,14 +59,22 @@ export default function Home() {
   const toggleClear = () => setClear(!clear);
   const [expanded, setExpanded] = React.useState({});
 
+  console.log("tasks", tasks)
+
   function IndeterminateCheckbox({ indeterminate, className = "", ...rest }) {
     const ref = useRef();
     useEffect(() => {
       if (typeof indeterminate === "boolean") {
+        console.log("indeterminate", rest);
         ref.current.indeterminate = !rest.checked && indeterminate;
+        setRefresh(true);
       }
     }, [ref, indeterminate]);
-
+    if(tasks){
+      const editTask = recursiveUpdateTask(tasks, rest.id, "status", rest.checked);
+      localStorage.setItem("tasks", JSON.stringify(editTask));
+    }
+    
     return (
       <input
         type="checkbox"
@@ -142,15 +150,15 @@ export default function Home() {
     () => [
       {
         accessorKey: "#",
-        header: ({ table }) => (
+        header: ({ table, row }) => (
           <>
-            <IndeterminateCheckbox
+            {/* <IndeterminateCheckbox
               {...{
                 checked: table.getIsAllRowsSelected(),
                 indeterminate: table.getIsSomeRowsSelected(),
                 onChange: table.getToggleAllRowsSelectedHandler(),
               }}
-            />{" "}
+            />{" "} */}
             <button
               className="btn"
               {...{
@@ -181,6 +189,7 @@ export default function Home() {
                   checked: row.getIsSelected(),
                   indeterminate: row.getIsSomeSelected(),
                   onChange: row.getToggleSelectedHandler(),
+                  id: row.original.id,
                 }}
               />{" "}
               {row.getCanExpand() && (
@@ -339,14 +348,25 @@ export default function Home() {
     }
   };
 
-  const recursiveUpdateTask = (tasks, id) => {
+  const recursiveUpdateTask = (tasks, id, mode, checked) => {
     const newTasks = tasks.map((task) => {
+      console.log("checked2", mode + "//"+ checked + "//" + id)
+
       if (task.id == id) {
-        task.desc = inputs.desc;
+        if (mode == "desc") {
+          task.desc = inputs.desc;
+        } else {
+
+          if (checked) {
+            task.status = "done";
+          } else {
+            task.status = "pending";
+          }
+        }
         return task;
       } else {
         if (task.subRows) {
-          let temp = recursiveUpdateTask(task.subRows, id);
+          let temp = recursiveUpdateTask(task.subRows, id, mode, checked);
           task.subRows = temp;
           return task;
         } else {
@@ -361,7 +381,7 @@ export default function Home() {
   const updateTask = () => {
     //allow nextjs to save in localstorage
     if (typeof window !== "undefined") {
-      const editTask = recursiveUpdateTask(tasks, inputs.id);
+      const editTask = recursiveUpdateTask(tasks, inputs.id, "desc", false);
       saveTaskToDatabase(editTask);
       toggle();
     }
