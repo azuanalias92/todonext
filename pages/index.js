@@ -141,7 +141,7 @@ export default function Home() {
   const columns = React.useMemo(
     () => [
       {
-        accessorKey: "id",
+        accessorKey: "#",
         header: ({ table }) => (
           <>
             <IndeterminateCheckbox
@@ -226,7 +226,7 @@ export default function Home() {
         footer: (props) => props.column.sub_comp,
       },
       {
-        accessorKey: "id",
+        accessorKey: "##",
         header: () => "Action",
         cell: (info) => actionFormatter(info.getValue()),
         footer: (props) => props.column.id,
