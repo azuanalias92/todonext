@@ -31,7 +31,6 @@ import {
   FaTimes,
   FaTrash,
 } from "react-icons/fa";
-import Select from "react-select";
 import {
   createColumnHelper,
   flexRender,
