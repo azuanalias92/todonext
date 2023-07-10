@@ -145,11 +145,16 @@ export default function Home() {
     );
   }
 
-  const triggerCheckbox = (id, checked) => {
-    const editTask = recursiveUpdateTask(tasks, id, "status", checked);
-    console.log("editTask", editTask);
-    localStorage.setItem("tasks", JSON.stringify(editTask));
-    setRefresh(true);
+  const triggerCheckbox = (id, checked, rows) => {
+    let tasks = localStorage.getItem("tasks")
+      ? JSON.parse(localStorage.getItem("tasks"))
+      : [];
+
+    if (tasks) {
+      const editTask = recursiveUpdateTask(tasks, id, "status", checked);
+      localStorage.setItem("tasks", JSON.stringify(editTask));
+      setRefresh(true);
+    }
   };
 
   const columns = React.useMemo(
@@ -179,7 +184,7 @@ export default function Home() {
             </button>
           </>
         ),
-        cell: ({ row }) => {
+        cell: ({ row, table }) => {
           return (
             <div
               style={{
@@ -204,7 +209,11 @@ export default function Home() {
                 <input
                   type="checkbox"
                   onClick={(e) =>
-                    triggerCheckbox(row.original.id, e.target.checked)
+                    triggerCheckbox(
+                      row.original.id,
+                      e.target.checked,
+                      table.getCoreRowModel()
+                    )
                   }
                 />
                 {row.getCanExpand() && (
@@ -341,14 +350,11 @@ export default function Home() {
         ? JSON.parse(localStorage.getItem("tasks"))
         : [];
       let parent = inputs.parent ? inputs.parent : null;
-      console.log("parent", parent);
 
       //add subRows
       if (parent) {
         //get the parent
         const newTasks = recursiveFindParent(tasks, parent, id, inputs.desc);
-        console.log("parent", newTasks);
-
         saveTaskToDatabase(newTasks);
       } else {
         tasks.push({
@@ -376,7 +382,6 @@ export default function Home() {
           if (checked) {
             task.status = "done";
           } else {
-            console.log("editTask", "pending");
             task.status = "pending";
           }
         }
