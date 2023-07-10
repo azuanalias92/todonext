@@ -55,25 +55,23 @@ export default function Home() {
   const [expanded, setExpanded] = React.useState({});
   const [rowSelection, setRowSelection] = React.useState({});
 
-  //console.log("tasks", tasks);
+  console.log("tasks", tasks);
 
   function IndeterminateCheckbox({ indeterminate, className = "", ...rest }) {
     const ref = useRef();
     useEffect(() => {
       if (typeof indeterminate === "boolean") {
         ref.current.indeterminate = !rest.checked && indeterminate;
-        setRefresh(true);
+        console.log("task3", rest.checked);
       }
     }, [ref, indeterminate]);
 
+    //setTrigger(rest.checked);
+
     if (tasks) {
-      const editTask = recursiveUpdateTask(
-        tasks,
-        rest.id,
-        "status",
-        rest.checked
-      );
-      localStorage.setItem("tasks", JSON.stringify(editTask));
+      console.log("task2", tasks);
+
+      //setRefresh(true);
     }
 
     return (
@@ -147,6 +145,13 @@ export default function Home() {
     );
   }
 
+  const triggerCheckbox = (id, checked) => {
+    const editTask = recursiveUpdateTask(tasks, id, "status", checked);
+    console.log("editTask", editTask);
+    localStorage.setItem("tasks", JSON.stringify(editTask));
+    setRefresh(true);
+  };
+
   const columns = React.useMemo(
     () => [
       {
@@ -186,14 +191,22 @@ export default function Home() {
               }}
             >
               <>
-                <IndeterminateCheckbox
+                {/* <IndeterminateCheckbox
                   {...{
                     checked: row.getIsSelected(),
                     indeterminate: row.getIsSomeSelected(),
                     onChange: row.getToggleSelectedHandler(),
                     id: row.original.id,
+                    data : data
                   }}
-                />{" "}
+                />{" "} */}
+
+                <input
+                  type="checkbox"
+                  onClick={(e) =>
+                    triggerCheckbox(row.original.id, e.target.checked)
+                  }
+                />
                 {row.getCanExpand() && (
                   <button
                     className="btn"
@@ -292,7 +305,6 @@ export default function Home() {
             desc: desc,
           });
         } else {
-
           x.subRows = [
             {
               id: id,
@@ -301,9 +313,6 @@ export default function Home() {
               desc: desc,
             },
           ];
-
-          console.log("parent", x)
-
         }
         return x;
       } else {
@@ -316,8 +325,6 @@ export default function Home() {
         }
       }
     });
-
-    console.log("parent", newTasks)
     return newTasks;
   };
 
@@ -369,6 +376,7 @@ export default function Home() {
           if (checked) {
             task.status = "done";
           } else {
+            console.log("editTask", "pending");
             task.status = "pending";
           }
         }
@@ -469,7 +477,7 @@ export default function Home() {
     let text = "IN PROGRESS";
 
     switch (cell) {
-      case "D":
+      case "done":
         color = "badge bg-primary";
         text = "DONE";
         break;
