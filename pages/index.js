@@ -41,8 +41,6 @@ import {
   getExpandedRowModel,
 } from "@tanstack/react-table";
 
-const columnHelper = createColumnHelper();
-
 export default function Home() {
   const [data, setData] = useState(false);
   const [modal, setModal] = useState(false);
@@ -50,30 +48,34 @@ export default function Home() {
   const [update, setUpdate] = useState(false);
   const [inputs, setInputs] = useState(false);
   const [tasks, setTasks] = useState(false);
-  const [selected, setSelected] = useState(false);
   const [refresh, setRefresh] = useState(false);
-  const [reassign, setReassign] = useState(false);
   const [clear, setClear] = useState(false);
   const toggle = () => setModal(!modal);
   const toggleClear = () => setClear(!clear);
   const [expanded, setExpanded] = React.useState({});
+  const [rowSelection, setRowSelection] = React.useState({});
 
-  console.log("tasks", tasks)
+  //console.log("tasks", tasks);
 
   function IndeterminateCheckbox({ indeterminate, className = "", ...rest }) {
     const ref = useRef();
     useEffect(() => {
       if (typeof indeterminate === "boolean") {
-        console.log("indeterminate", rest);
         ref.current.indeterminate = !rest.checked && indeterminate;
         setRefresh(true);
       }
     }, [ref, indeterminate]);
-    if(tasks){
-      const editTask = recursiveUpdateTask(tasks, rest.id, "status", rest.checked);
+
+    if (tasks) {
+      const editTask = recursiveUpdateTask(
+        tasks,
+        rest.id,
+        "status",
+        rest.checked
+      );
       localStorage.setItem("tasks", JSON.stringify(editTask));
     }
-    
+
     return (
       <input
         type="checkbox"
@@ -172,39 +174,41 @@ export default function Home() {
             </button>
           </>
         ),
-        cell: ({ row, getValue }) => (
-          <div
-            style={{
-              // Since rows are flattened by default,
-              // we can use the row.depth property
-              // and paddingLeft to visually indicate the depth
-              // of the row
-              paddingLeft: `${row.depth * 2}rem`,
-            }}
-          >
-            <>
-              <IndeterminateCheckbox
-                {...{
-                  checked: row.getIsSelected(),
-                  indeterminate: row.getIsSomeSelected(),
-                  onChange: row.getToggleSelectedHandler(),
-                  id: row.original.id,
-                }}
-              />{" "}
-              {row.getCanExpand() && (
-                <button
-                  className="btn"
+        cell: ({ row }) => {
+          return (
+            <div
+              style={{
+                // Since rows are flattened by default,
+                // we can use the row.depth property
+                // and paddingLeft to visually indicate the depth
+                // of the row
+                paddingLeft: `${row.depth * 2}rem`,
+              }}
+            >
+              <>
+                <IndeterminateCheckbox
                   {...{
-                    onClick: row.getToggleExpandedHandler(),
-                    style: { cursor: "pointer" },
+                    checked: row.getIsSelected(),
+                    indeterminate: row.getIsSomeSelected(),
+                    onChange: row.getToggleSelectedHandler(),
+                    id: row.original.id,
                   }}
-                >
-                  {row.getIsExpanded() ? <FaChevronDown /> : <FaChevronUp />}
-                </button>
-              )}
-            </>
-          </div>
-        ),
+                />{" "}
+                {row.getCanExpand() && (
+                  <button
+                    className="btn"
+                    {...{
+                      onClick: row.getToggleExpandedHandler(),
+                      style: { cursor: "pointer" },
+                    }}
+                  >
+                    {row.getIsExpanded() ? <FaChevronDown /> : <FaChevronUp />}
+                  </button>
+                )}
+              </>
+            </div>
+          );
+        },
         footer: (props) => props.column.id,
       },
       {
@@ -236,7 +240,7 @@ export default function Home() {
       {
         accessorKey: "##",
         header: () => "Action",
-        cell: (info) => actionFormatter(info.getValue()),
+        cell: (info) => actionFormatter(info.row.original.id),
         footer: (props) => props.column.id,
       },
     ],
@@ -246,7 +250,9 @@ export default function Home() {
   const table = useReactTable({
     data,
     columns,
-    state: { expanded },
+    state: { expanded, rowSelection },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     onExpandedChange: setExpanded,
     getSubRows: (row) => row.subRows,
     getCoreRowModel: getCoreRowModel(),
@@ -276,7 +282,6 @@ export default function Home() {
 
   const recursiveFindParent = (tasks, parent, id, desc) => {
     const newTasks = tasks.map((x) => {
-      console.log("parent - x", x.id);
       //check parent id first
       if (x.id == parent) {
         if (x.subRows) {
@@ -287,6 +292,7 @@ export default function Home() {
             desc: desc,
           });
         } else {
+
           x.subRows = [
             {
               id: id,
@@ -295,6 +301,9 @@ export default function Home() {
               desc: desc,
             },
           ];
+
+          console.log("parent", x)
+
         }
         return x;
       } else {
@@ -308,6 +317,7 @@ export default function Home() {
       }
     });
 
+    console.log("parent", newTasks)
     return newTasks;
   };
 
@@ -324,11 +334,14 @@ export default function Home() {
         ? JSON.parse(localStorage.getItem("tasks"))
         : [];
       let parent = inputs.parent ? inputs.parent : null;
+      console.log("parent", parent);
 
       //add subRows
       if (parent) {
         //get the parent
         const newTasks = recursiveFindParent(tasks, parent, id, inputs.desc);
+        console.log("parent", newTasks);
+
         saveTaskToDatabase(newTasks);
       } else {
         tasks.push({
@@ -349,13 +362,10 @@ export default function Home() {
 
   const recursiveUpdateTask = (tasks, id, mode, checked) => {
     const newTasks = tasks.map((task) => {
-      console.log("checked2", mode + "//"+ checked + "//" + id)
-
       if (task.id == id) {
         if (mode == "desc") {
           task.desc = inputs.desc;
         } else {
-
           if (checked) {
             task.status = "done";
           } else {
@@ -620,28 +630,23 @@ export default function Home() {
                 ))}
               </thead>
               <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+                {table.getRowModel().rows.map((row) => {
+                  return (
+                    <tr key={row.original.id}>
+                      {row.getVisibleCells().map((cell) => {
+                        return (
+                          <td key={cell.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
-              {/* <tfoot>
-                {table.getFooterGroups().map((footerGroup) => (
-                  <tr key={footerGroup.id}>
-                    {footerGroup.headers.map((header) => (
-                      <th key={header.id}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.footer, header.getContext())}</th>
-                    ))}
-                  </tr>
-                ))}
-              </tfoot> */}
             </table>
           </div>
         </CardBody>
